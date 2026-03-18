@@ -904,7 +904,8 @@ export default function App() {
 
     if(isCloud){
 
-      await supabase.from("crm_users").upsert(Object.entries(u).map(([username,v])=>({username,name:v.name,pass:v.pass})));
+      const {error:ue}=await supabase.from("crm_users").upsert(Object.entries(u).map(([username,v])=>({username,name:v.name,pass:v.pass})));
+      if(ue)console.error("crm_users upsert error:",ue);
 
     } else {
 
