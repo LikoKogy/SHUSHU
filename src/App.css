@@ -1,0 +1,58 @@
+/* ── Mobile Responsiveness ─────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+
+  /* Login hero headline */
+  .login-hero {
+    font-size: 26px !important;
+    line-height: 1.25 !important;
+  }
+
+  /* Nav bar inner wrapper: wrap title + buttons on small screens */
+  .nav-inner {
+    padding: 10px 16px !important;
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  /* Right-side nav buttons: allow wrapping */
+  .nav-right {
+    flex-wrap: wrap;
+    gap: 6px !important;
+  }
+
+  /* Two-column grids → single column on mobile */
+  .two-col {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Size grid wrapper: horizontal scroll so 8 columns stay usable */
+  .size-grid-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    margin-bottom: 16px;
+  }
+
+  /* Content wrapper: reduce vertical padding */
+  .wrap-inner {
+    padding: 20px 16px !important;
+  }
+
+  /* Admin stat cards: 2 per row on mobile instead of 4 */
+  .stat-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Admin filter bar: stack selects */
+  .filter-bar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .filter-bar input,
+  .filter-bar select {
+    width: 100% !important;
+  }
+}
