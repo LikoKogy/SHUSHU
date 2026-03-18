@@ -54,21 +54,21 @@ function fileKey(orderId, itemIdx, fieldName) {
 
 }
 
-async function readFileAsDataURL(file) {
-
-  return new Promise((res, rej) => {
-
-    const r = new FileReader();
-
-    r.onloadend = () => res(r.result);
-
-    r.onerror = rej;
-
-    r.readAsDataURL(file);
-
+const fileDb = (() => {
+  let _db = null;
+  const open = () => new Promise((res, rej) => {
+    if (_db) return res(_db);
+    const req = indexedDB.open("garment-crm-files", 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore("files");
+    req.onsuccess = e => { _db = e.target.result; res(_db); };
+    req.onerror = rej;
   });
-
-}
+  return {
+    set: async (key, blob) => { const db = await open(); return new Promise((res,rej)=>{ const tx=db.transaction("files","readwrite"); tx.objectStore("files").put(blob,key); tx.oncomplete=res; tx.onerror=rej; }); },
+    get: async (key) => { const db = await open(); return new Promise((res,rej)=>{ const tx=db.transaction("files","readonly"); const r=tx.objectStore("files").get(key); r.onsuccess=e=>res(e.target.result||null); r.onerror=rej; }); },
+    delete: async (key) => { const db = await open(); return new Promise((res,rej)=>{ const tx=db.transaction("files","readwrite"); tx.objectStore("files").delete(key); tx.oncomplete=res; tx.onerror=rej; }); },
+  };
+})();
 
 async function persistOrders(orders) {
 
@@ -84,7 +84,7 @@ async function fetchOrders() {
 
 async function loadFileData(key) {
 
-  try { const r = storage.get(key); return r ? r.value : null; } catch(_) { return null; }
+  try { return await fileDb.get(key); } catch(_) { return null; }
 
 }
 
@@ -494,9 +494,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
         const key = fileKey(oid, i, "catalog");
 
-        const dataUrl = await readFileAsDataURL(pending["__catalog__"]);
-
-        storage.set(key, dataUrl);
+        await fileDb.set(key, pending["__catalog__"]);
 
         catalogImage = { name: pending["__catalog__"].name, key };
 
@@ -510,9 +508,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
           const key = fileKey(oid, i, fname);
 
-          const dataUrl = await readFileAsDataURL(pending[fname]);
-
-          storage.set(key, dataUrl);
+          await fileDb.set(key, pending[fname]);
 
           brandingFiles[fname] = { name: pending[fname].name, key };
 
@@ -952,12 +948,10 @@ export default function App() {
 
   const handleDownload=async(key,name)=>{
 
-    const data=await loadFileData(key);
+    const blob=await loadFileData(key);
 
-    if(!data){toast("File not found.","warn");return;}
+    if(!blob){toast("File not found.","warn");return;}
 
-    const res=await fetch(data);
-    const blob=await res.blob();
     const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
     a.href=url; a.download=name;
