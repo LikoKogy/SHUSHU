@@ -8,7 +8,7 @@ const C = {
 
   green:"#34c759", amber:"#ff9f0a", red:"#ff3b30",
 
-  purple:"#bf5af2", gray:"#8e8e93",
+  purple:"#bf5af2", gray:"#8e8e93", white:"#ffffff",
 
 };
 
@@ -92,7 +92,7 @@ async function loadFileData(key) {
 
 const Badge = ({status}) => <span style={{background:STATUS[status]+"18",color:STATUS[status],borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:600,fontFamily:font}}>{status}</span>;
 
-const PillBtn = ({children,active,onClick}) => <button onClick={onClick} style={{background:active?C.text:"transparent",color:active?"#fff":C.sub,border:`1px solid ${active?C.text:C.border}`,borderRadius:20,padding:"5px 14px",fontSize:13,cursor:"pointer",fontFamily:font,fontWeight:active?600:400}}>{children}</button>;
+const PillBtn = ({children,active,onClick}) => <button onClick={onClick} style={{background:active?C.text:"transparent",color:active?C.white:C.sub,border:`1px solid ${active?C.text:C.border}`,borderRadius:20,padding:"5px 14px",fontSize:13,cursor:"pointer",fontFamily:font,fontWeight:active?600:400}}>{children}</button>;
 
 const Inp = ({value,onChange,placeholder,type="text",style={}}) => (
 
@@ -104,7 +104,7 @@ const Inp = ({value,onChange,placeholder,type="text",style={}}) => (
 
 );
 
-const PrimaryBtn = ({children,onClick,disabled,style={}}) => <button disabled={disabled} onClick={onClick} style={{background:disabled?C.bg3:C.text,color:disabled?C.gray:"#fff",border:"none",borderRadius:10,padding:"11px 22px",fontFamily:font,fontWeight:600,fontSize:15,cursor:disabled?"not-allowed":"pointer",...style}}>{children}</button>;
+const PrimaryBtn = ({children,onClick,disabled,style={}}) => <button disabled={disabled} onClick={onClick} style={{background:disabled?C.bg3:C.text,color:disabled?C.gray:C.white,border:"none",borderRadius:10,padding:"11px 22px",fontFamily:font,fontWeight:600,fontSize:15,cursor:disabled?"not-allowed":"pointer",...style}}>{children}</button>;
 
 const GhostBtn = ({children,onClick,style={}}) => <button onClick={onClick} style={{background:"transparent",color:C.text,border:"none",borderRadius:10,padding:"11px 22px",fontFamily:font,fontWeight:500,fontSize:15,cursor:"pointer",...style}}>{children}</button>;
 
@@ -114,7 +114,7 @@ const Toast = ({toasts}) => (
 
   <div style={{position:"fixed",bottom:28,left:"50%",transform:"translateX(-50%)",zIndex:9999,display:"flex",flexDirection:"column",gap:8,alignItems:"center",pointerEvents:"none"}}>
 
-    {toasts.map(t=><div key={t.id} style={{background:t.type==="warn"?"#ff9f0a":"#1d1d1f",color:"#fff",padding:"11px 22px",borderRadius:22,fontSize:14,fontFamily:font,fontWeight:500,boxShadow:"0 4px 24px #0002"}}>{t.msg}</div>)}
+    {toasts.map(t=><div key={t.id} style={{background:t.type==="warn"?"#ff9f0a":"#1d1d1f",color:C.white,padding:"11px 22px",borderRadius:22,fontSize:14,fontFamily:font,fontWeight:500,boxShadow:"0 4px 24px #0002"}}>{t.msg}</div>)}
 
   </div>
 
@@ -136,7 +136,7 @@ const Section = ({n,title,sub,children,grey}) => (
 
     <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
 
-      <span style={{background:C.text,color:"#fff",borderRadius:99,width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,flexShrink:0}}>{n}</span>
+      <span style={{background:C.text,color:C.white,borderRadius:99,width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,flexShrink:0}}>{n}</span>
 
       <span style={{fontSize:18,fontWeight:700,color:C.text,flex:1}}>{title}</span>
 
@@ -194,7 +194,7 @@ function UploadSlot({label, required, initial, onReady, showShareToggle, isShare
 
             <div style={{width:36,height:20,borderRadius:99,background:isShared?C.green:C.bg3,border:`1.5px solid ${isShared?C.green:C.border}`,position:"relative",flexShrink:0}}>
 
-              <div style={{position:"absolute",top:2,left:isShared?16:2,width:14,height:14,borderRadius:99,background:"#fff",transition:"left .2s"}}/>
+              <div style={{position:"absolute",top:2,left:isShared?16:2,width:14,height:14,borderRadius:99,background:C.white,transition:"left .2s"}}/>
 
             </div>
 
@@ -292,7 +292,7 @@ const ItemCard = ({it,idx,isAdmin,onDownload}) => (
 
         <span style={{color:C.green,fontWeight:500}}>🖼 {it.catalogImage.name}</span>
 
-        {isAdmin&&it.catalogImage.key&&<button onClick={()=>onDownload(it.catalogImage.key,it.catalogImage.name)} style={{background:C.text,color:"#fff",border:"none",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:font,fontWeight:600}}>Download</button>}
+        {isAdmin&&it.catalogImage.key&&<button onClick={()=>onDownload(it.catalogImage.key,it.catalogImage.name)} style={{background:C.text,color:C.white,border:"none",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:font,fontWeight:600}}>Download</button>}
 
       </div>
 
@@ -324,7 +324,7 @@ const ItemCard = ({it,idx,isAdmin,onDownload}) => (
 
               <span style={{fontSize:12,color:C.green,fontWeight:600}}>✓ {k}: {v.name}</span>
 
-              {isAdmin&&v.key&&<button onClick={()=>onDownload(v.key,v.name)} style={{background:C.text,color:"#fff",border:"none",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:font,fontWeight:600}}>Download</button>}
+              {isAdmin&&v.key&&<button onClick={()=>onDownload(v.key,v.name)} style={{background:C.text,color:C.white,border:"none",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:font,fontWeight:600}}>Download</button>}
 
             </div>
 
@@ -554,7 +554,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
       <Section n="1" title="Garment Items" grey={true} sub={
 
-        <button onClick={addItem} style={{background:C.text,color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:font}}>+ Add Item</button>
+        <button onClick={addItem} style={{background:C.text,color:C.white,border:"none",borderRadius:8,padding:"6px 14px",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:font}}>+ Add Item</button>
 
       }>
 
@@ -632,7 +632,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
                 <button key={l} onClick={()=>toggleLogo(i,l)}
 
-                  style={{background:it.logos.includes(l)?C.text:C.bg,color:it.logos.includes(l)?"#fff":C.sub,border:`1px solid ${it.logos.includes(l)?C.text:C.border}`,borderRadius:20,padding:"5px 13px",fontSize:12,cursor:"pointer",fontFamily:font,fontWeight:it.logos.includes(l)?600:400}}>
+                  style={{background:it.logos.includes(l)?C.text:C.bg,color:it.logos.includes(l)?C.white:C.sub,border:`1px solid ${it.logos.includes(l)?C.text:C.border}`,borderRadius:20,padding:"5px 13px",fontSize:12,cursor:"pointer",fontFamily:font,fontWeight:it.logos.includes(l)?600:400}}>
 
                   {l}
 
@@ -700,7 +700,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
                       <div style={{width:36,height:20,borderRadius:99,background:sharedNotesOn?C.green:C.bg3,border:`1.5px solid ${sharedNotesOn?C.green:C.border}`,position:"relative",flexShrink:0}}>
 
-                        <div style={{position:"absolute",top:2,left:sharedNotesOn?16:2,width:14,height:14,borderRadius:99,background:"#fff",transition:"left .2s"}}/>
+                        <div style={{position:"absolute",top:2,left:sharedNotesOn?16:2,width:14,height:14,borderRadius:99,background:C.white,transition:"left .2s"}}/>
 
                       </div>
 
@@ -1196,7 +1196,7 @@ export default function App() {
 
         </Wrap>
 
-        {deleteTarget&&<Modal onClose={()=>setDeleteTarget(null)}><div style={{fontSize:18,fontWeight:700,marginBottom:8}}>Delete this order?</div><div style={{color:C.sub,fontSize:14,marginBottom:24}}>This will be permanently removed.</div><div style={{display:"flex",gap:10}}><GhostBtn onClick={()=>setDeleteTarget(null)} style={{flex:1,color:C.sub}}>Cancel</GhostBtn><button onClick={()=>handleDelete(deleteTarget.id)} style={{flex:1,background:C.red,color:"#fff",border:"none",borderRadius:10,padding:"11px",cursor:"pointer",fontFamily:font,fontWeight:600,fontSize:15}}>Delete</button></div></Modal>}
+        {deleteTarget&&<Modal onClose={()=>setDeleteTarget(null)}><div style={{fontSize:18,fontWeight:700,marginBottom:8}}>Delete this order?</div><div style={{color:C.sub,fontSize:14,marginBottom:24}}>This will be permanently removed.</div><div style={{display:"flex",gap:10}}><GhostBtn onClick={()=>setDeleteTarget(null)} style={{flex:1,color:C.sub}}>Cancel</GhostBtn><button onClick={()=>handleDelete(deleteTarget.id)} style={{flex:1,background:C.red,color:C.white,border:"none",borderRadius:10,padding:"11px",cursor:"pointer",fontFamily:font,fontWeight:600,fontSize:15}}>Delete</button></div></Modal>}
 
         <Toast toasts={toasts}/>
 
@@ -1422,7 +1422,7 @@ export default function App() {
 
       </Wrap>
 
-      {deleteTarget&&<Modal onClose={()=>setDeleteTarget(null)}><div style={{fontSize:18,fontWeight:700,marginBottom:8}}>Delete this order?</div><div style={{color:C.sub,fontSize:14,marginBottom:24}}>Order #{deleteTarget.id} from <strong>{deleteTarget.ownerName}</strong> will be permanently removed.</div><div style={{display:"flex",gap:10}}><GhostBtn onClick={()=>setDeleteTarget(null)} style={{flex:1,color:C.sub}}>Cancel</GhostBtn><button onClick={()=>handleDelete(deleteTarget.id)} style={{flex:1,background:C.red,color:"#fff",border:"none",borderRadius:10,padding:"11px",cursor:"pointer",fontFamily:font,fontWeight:600,fontSize:15}}>Delete</button></div></Modal>}
+      {deleteTarget&&<Modal onClose={()=>setDeleteTarget(null)}><div style={{fontSize:18,fontWeight:700,marginBottom:8}}>Delete this order?</div><div style={{color:C.sub,fontSize:14,marginBottom:24}}>Order #{deleteTarget.id} from <strong>{deleteTarget.ownerName}</strong> will be permanently removed.</div><div style={{display:"flex",gap:10}}><GhostBtn onClick={()=>setDeleteTarget(null)} style={{flex:1,color:C.sub}}>Cancel</GhostBtn><button onClick={()=>handleDelete(deleteTarget.id)} style={{flex:1,background:C.red,color:C.white,border:"none",borderRadius:10,padding:"11px",cursor:"pointer",fontFamily:font,fontWeight:600,fontSize:15}}>Delete</button></div></Modal>}
 
       <Toast toasts={toasts}/>
 
