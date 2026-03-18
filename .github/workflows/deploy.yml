@@ -1,6 +1,9 @@
 name: Deploy to GitHub Pages
 
 on:
+  workflow_run:
+    workflows: ["Auto Deploy Claude Changes"]
+    types: [completed]
   push:
     branches:
       - main
@@ -19,6 +22,8 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
       - uses: actions/setup-node@v4
         with:
           node-version: 20
