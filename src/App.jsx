@@ -943,6 +943,8 @@ export default function App() {
 
       setOrders(await fetchOrders());
 
+      try{const s=sessionStorage.getItem("crm-session");if(s){const{portal:p,currentUser:cu}=JSON.parse(s);if(p&&cu){setPortal(p);setCurrentUser(cu);}}}catch(_){}
+
       setLoaded(true);
 
     })();
@@ -1066,8 +1068,9 @@ export default function App() {
 
     const u={...users,[authUser.toLowerCase()]:{name:authName.trim(),pass:authPass}};
 
-    saveUsers(u); setCurrentUser({username:authUser.toLowerCase(),name:authName.trim()});
-
+    const cu={username:authUser.toLowerCase(),name:authName.trim()};
+    saveUsers(u); setCurrentUser(cu);
+    sessionStorage.setItem("crm-session",JSON.stringify({portal:"customer",currentUser:cu}));
     setPortal("customer"); setView("list"); toast(`Welcome, ${authName.trim()}!`);
 
   };
@@ -1078,8 +1081,9 @@ export default function App() {
 
     if(!u||u.pass!==authPass){setAuthErr("Incorrect username or password.");return;}
 
-    setCurrentUser({username:authUser.toLowerCase(),name:u.name});
-
+    const cu={username:authUser.toLowerCase(),name:u.name};
+    setCurrentUser(cu);
+    sessionStorage.setItem("crm-session",JSON.stringify({portal:"customer",currentUser:cu}));
     setPortal("customer"); setView("list"); toast(`Welcome back, ${u.name}!`);
 
   };
@@ -1092,7 +1096,7 @@ export default function App() {
 
   };
 
-  const logout=()=>{setPortal("home");setCurrentUser(null);setView("list");setAuthName("");setAuthUser("");setAuthPass("");setAuthErr("");};
+  const logout=()=>{sessionStorage.removeItem("crm-session");setPortal("home");setCurrentUser(null);setView("list");setAuthName("");setAuthUser("");setAuthPass("");setAuthErr("");};
 
   const nextId=()=>(orders.length?Math.max(...orders.map(o=>o.id))+1:1);
 
