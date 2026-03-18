@@ -1,4 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import "./App.css";
+import { supabase, isCloud } from "./supabase.js";
 
 const C = {
 
@@ -70,7 +72,23 @@ const fileDb = (() => {
   };
 })();
 
-async function persistOrders(orders) {
+async function persistOrders(orders, prevOrders) {
+
+  if (isCloud) {
+
+    const prevIds = new Set((prevOrders||[]).map(o=>o.id));
+
+    const newIds  = new Set(orders.map(o=>o.id));
+
+    const deleted = [...prevIds].filter(id=>!newIds.has(id));
+
+    if (deleted.length) await supabase.from("crm_orders").delete().in("id", deleted);
+
+    if (orders.length) await supabase.from("crm_orders").upsert(orders.map(o=>({id:o.id,data:o})));
+
+    return;
+
+  }
 
   storage.set("crm-orders", JSON.stringify(orders));
 
@@ -78,11 +96,27 @@ async function persistOrders(orders) {
 
 async function fetchOrders() {
 
+  if (isCloud) {
+
+    const { data } = await supabase.from("crm_orders").select().order("id", {ascending:false});
+
+    return data ? data.map(r=>r.data) : [];
+
+  }
+
   try { const r = storage.get("crm-orders"); return r ? JSON.parse(r.value) : []; } catch(_) { return []; }
 
 }
 
 async function loadFileData(key) {
+
+  if (isCloud) {
+
+    const { data, error } = await supabase.storage.from("crm-files").download(key);
+
+    return error ? null : data;
+
+  }
 
   try { return await fileDb.get(key); } catch(_) { return null; }
 
@@ -366,7 +400,7 @@ function ProfileCard({profile,onSave}) {
 
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      <div className="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
 
         {[["Email",profile.email||"—"],["Phone",profile.phone||"—"],["Business Address",profile.address||"—","1/-1"],["Info / Note",profile.infoNote||"—","1/-1"]].map(([l,v,col])=>(
 
@@ -392,7 +426,7 @@ function ProfileCard({profile,onSave}) {
 
       <div style={{fontSize:15,fontWeight:700,marginBottom:16}}>Edit My Info</div>
 
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+      <div className="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
 
         <div><div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:6,textTransform:"uppercase"}}>Email</div><Inp value={draft.email||""} onChange={v=>f("email",v)} placeholder="email@company.com" type="email"/></div>
 
@@ -494,7 +528,9 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
         const key = fileKey(oid, i, "catalog");
 
-        await fileDb.set(key, pending["__catalog__"]);
+        if(isCloud){await supabase.storage.from("crm-files").upload(key,pending["__catalog__"],{upsert:true});}
+
+        else{await fileDb.set(key, pending["__catalog__"]);}
 
         catalogImage = { name: pending["__catalog__"].name, key };
 
@@ -508,7 +544,9 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
           const key = fileKey(oid, i, fname);
 
-          await fileDb.set(key, pending[fname]);
+          if(isCloud){await supabase.storage.from("crm-files").upload(key,pending[fname],{upsert:true});}
+
+          else{await fileDb.set(key, pending[fname]);}
 
           brandingFiles[fname] = { name: pending[fname].name, key };
 
@@ -568,7 +606,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
             <CatalogSlot initial={it.catalogImage} onReady={f=>queueFile(i,"__catalog__",f)}/>
 
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+            <div className="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
 
               <div>
 
@@ -590,7 +628,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
             <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:6,textTransform:"uppercase"}}>Quantity Per Size</div>
 
-            <div style={{display:"grid",gridTemplateColumns:"repeat(8,1fr)",gap:8,marginBottom:16}}>
+            <div className="size-grid-scroll"><div style={{display:"grid",gridTemplateColumns:"repeat(8,minmax(44px,1fr))",gap:8,minWidth:340}}>
 
               {SIZES.map(sz=>(
 
@@ -618,7 +656,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
               </div>
 
-            </div>
+            </div></div>
 
             <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:8,textTransform:"uppercase"}}>Logo Placement <span style={{color:C.sub,fontWeight:400,textTransform:"none",letterSpacing:0}}>— select all that apply</span></div>
 
@@ -834,9 +872,23 @@ export default function App() {
 
     (async()=>{
 
-      try{const r=storage.get("crm-users");if(r)setUsers(JSON.parse(r.value));}catch(_){}
+      if (isCloud) {
 
-      try{const r=storage.get("crm-profiles");if(r)setProfiles(JSON.parse(r.value));}catch(_){}
+        const { data: ud } = await supabase.from("crm_users").select();
+
+        if (ud) setUsers(Object.fromEntries(ud.map(r=>[r.username,{name:r.name,pass:r.pass}])));
+
+        const { data: pd } = await supabase.from("crm_profiles").select();
+
+        if (pd) setProfiles(Object.fromEntries(pd.map(r=>[r.username,{email:r.email||"",phone:r.phone||"",address:r.address||"",infoNote:r.info_note||""}])));
+
+      } else {
+
+        try{const r=storage.get("crm-users");if(r)setUsers(JSON.parse(r.value));}catch(_){}
+
+        try{const r=storage.get("crm-profiles");if(r)setProfiles(JSON.parse(r.value));}catch(_){}
+
+      }
 
       setOrders(await fetchOrders());
 
@@ -846,11 +898,47 @@ export default function App() {
 
   },[]);
 
-  const saveUsers=u=>{setUsers(u);storage.set("crm-users",JSON.stringify(u));};
+  const saveUsers=async u=>{
 
-  const saveProfiles=p=>{setProfiles(p);storage.set("crm-profiles",JSON.stringify(p));};
+    setUsers(u);
 
-  const saveOrders=async o=>{setOrders(o);await persistOrders(o);};
+    if(isCloud){
+
+      await supabase.from("crm_users").upsert(Object.entries(u).map(([username,v])=>({username,name:v.name,pass:v.pass})));
+
+    } else {
+
+      storage.set("crm-users",JSON.stringify(u));
+
+    }
+
+  };
+
+  const saveProfiles=async p=>{
+
+    setProfiles(p);
+
+    if(isCloud){
+
+      await supabase.from("crm_profiles").upsert(Object.entries(p).map(([username,v])=>({username,email:v.email||"",phone:v.phone||"",address:v.address||"",info_note:v.infoNote||""})));
+
+    } else {
+
+      storage.set("crm-profiles",JSON.stringify(p));
+
+    }
+
+  };
+
+  const saveOrders=async (newOrders)=>{
+
+    const prev=orders;
+
+    setOrders(newOrders);
+
+    await persistOrders(newOrders,prev);
+
+  };
 
   const handleRegister=()=>{
 
@@ -970,7 +1058,7 @@ export default function App() {
 
         <div style={{fontSize:13,fontWeight:600,color:C.sub,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>GarmentCRM</div>
 
-        <div style={{fontSize:40,fontWeight:700,color:C.text,letterSpacing:-.5,lineHeight:1.1}}>Order management,<br/>done simply.</div>
+        <div className="login-hero" style={{fontSize:40,fontWeight:700,color:C.text,letterSpacing:-.5,lineHeight:1.1}}>Order management,<br/>done simply.</div>
 
       </div>
 
@@ -1038,11 +1126,11 @@ export default function App() {
 
     <div style={{borderBottom:`1px solid ${C.border}`,position:"sticky",top:0,background:C.bg+"ee",backdropFilter:"blur(20px)",zIndex:100}}>
 
-      <div style={{maxWidth:960,margin:"0 auto",padding:"16px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div className="nav-inner" style={{maxWidth:960,margin:"0 auto",padding:"16px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
 
         <div><div style={{fontSize:20,fontWeight:700,color:C.text,letterSpacing:-.3}}>{title}</div>{sub&&<div style={{fontSize:13,color:C.sub}}>{sub}</div>}</div>
 
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>{right}</div>
+        <div className="nav-right" style={{display:"flex",gap:8,alignItems:"center"}}>{right}</div>
 
       </div>
 
@@ -1050,7 +1138,7 @@ export default function App() {
 
   );
 
-  const Wrap=({children})=><div style={{maxWidth:960,margin:"0 auto",padding:"32px 24px"}}>{children}</div>;
+  const Wrap=({children})=><div className="wrap-inner" style={{maxWidth:960,margin:"0 auto",padding:"32px 24px"}}>{children}</div>;
 
   if(portal==="customer"){
 
@@ -1246,7 +1334,7 @@ export default function App() {
 
         {view==="list"&&(<>
 
-          <div style={{display:"flex",gap:12,marginBottom:28,flexWrap:"wrap"}}>
+          <div className="stat-row" style={{display:"flex",gap:12,marginBottom:28,flexWrap:"wrap"}}>
 
             <Stat label="Total Orders" value={activeOrders.length}/>
 
@@ -1258,7 +1346,7 @@ export default function App() {
 
           </div>
 
-          <div style={{background:C.bg,borderRadius:16,padding:"16px 20px",marginBottom:20,display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",border:`1px solid ${C.border}`}}>
+          <div className="filter-bar" style={{background:C.bg,borderRadius:16,padding:"16px 20px",marginBottom:20,display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",border:`1px solid ${C.border}`}}>
 
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search orders…" style={{background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 14px",fontFamily:font,fontSize:14,flex:1,minWidth:160,outline:"none"}}/>
 
