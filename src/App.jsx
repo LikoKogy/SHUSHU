@@ -186,9 +186,35 @@ const Section = ({n,title,sub,children,grey}) => (
 
 // ── UploadSlot ─────────────────────────────────────────────────────────────
 
+function FilePreview({file, url}) {
+  if(!file&&!url) return null;
+  const name = file?.name||"";
+  const isPdf = name.toLowerCase().endsWith(".pdf");
+  if(isPdf||!url) return (
+    <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"#ff3b3018",border:"1px solid #ff3b3030",borderRadius:7,padding:"4px 10px",marginBottom:6}}>
+      <span style={{fontSize:16}}>📄</span>
+      <span style={{fontSize:11,color:C.red,fontWeight:600,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</span>
+    </div>
+  );
+  return <img src={url} alt="preview" style={{maxHeight:80,maxWidth:"100%",borderRadius:7,marginBottom:6,objectFit:"contain",display:"block"}}/>;
+}
+
 function UploadSlot({label, required, initial, onReady, showShareToggle, isShared, onToggleShare, lockedByShared}) {
 
   const [fileName, setFileName] = useState(initial?.name||null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [liveFile, setLiveFile] = useState(null);
+
+  useEffect(()=>{
+    if(lockedByShared||!initial?.key) return;
+    const name=initial?.name||"";
+    if(name.toLowerCase().endsWith(".pdf")) return;
+    let url=null;
+    loadFileData(initial.key).then(blob=>{
+      if(blob){url=URL.createObjectURL(blob);setPreviewUrl(url);}
+    });
+    return ()=>{ if(url) URL.revokeObjectURL(url); };
+  },[initial?.key,lockedByShared]);
 
   const handleChange = async (e) => {
 
@@ -197,6 +223,12 @@ function UploadSlot({label, required, initial, onReady, showShareToggle, isShare
     if (!f) return;
 
     setFileName(f.name);
+    setLiveFile(f);
+
+    if(previewUrl) URL.revokeObjectURL(previewUrl);
+    const isPdf = f.name.toLowerCase().endsWith(".pdf");
+    if(!isPdf) setPreviewUrl(URL.createObjectURL(f));
+    else setPreviewUrl(null);
 
     onReady(f);
 
@@ -205,6 +237,7 @@ function UploadSlot({label, required, initial, onReady, showShareToggle, isShare
   };
 
   const displayName = lockedByShared ? initial?.name : fileName;
+  const displayFile = lockedByShared ? null : liveFile;
 
   return (
 
@@ -245,9 +278,11 @@ function UploadSlot({label, required, initial, onReady, showShareToggle, isShare
         <div style={{padding:"12px",textAlign:"center"}}>
 
           {displayName
-
-            ? <span style={{fontSize:13,color:C.green,fontWeight:600}}>✓ {displayName}</span>
-
+            ? <>
+                <FilePreview file={displayFile||{name:displayName}} url={previewUrl}/>
+                <span style={{fontSize:11,color:C.green,fontWeight:600}}>✓ {displayName}</span>
+                {!lockedByShared&&<div style={{fontSize:10,color:C.sub,marginTop:2}}>Tap to replace</div>}
+              </>
             : <span style={{fontSize:13,color:C.sub}}>↑ Upload File</span>}
 
         </div>
@@ -265,6 +300,16 @@ function UploadSlot({label, required, initial, onReady, showShareToggle, isShare
 function CatalogSlot({initial, onReady}) {
 
   const [fileName, setFileName] = useState(initial?.name||null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+
+  useEffect(()=>{
+    if(!initial?.key) return;
+    let url=null;
+    loadFileData(initial.key).then(blob=>{
+      if(blob){url=URL.createObjectURL(blob);setPreviewUrl(url);}
+    });
+    return ()=>{ if(url) URL.revokeObjectURL(url); };
+  },[initial?.key]);
 
   const handleChange = (e) => {
 
@@ -273,6 +318,9 @@ function CatalogSlot({initial, onReady}) {
     if (!f) return;
 
     setFileName(f.name);
+
+    if(previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(URL.createObjectURL(f));
 
     onReady(f);
 
@@ -294,13 +342,13 @@ function CatalogSlot({initial, onReady}) {
 
         <input type="file" accept="image/*" style={{display:"none"}} onChange={handleChange}/>
 
-        <div style={{padding:"20px",textAlign:"center"}}>
+        <div style={{padding:"16px 20px",textAlign:"center"}}>
 
-          {fileName
-
-            ? <><div style={{fontSize:22,marginBottom:6}}>✅</div><div style={{fontSize:13,color:C.green,fontWeight:600}}>{fileName}</div><div style={{fontSize:11,color:C.sub,marginTop:4}}>Tap to replace</div></>
-
-            : <><div style={{fontSize:22,marginBottom:6}}>🖼</div><div style={{fontSize:13,color:C.sub,fontWeight:500}}>Tap to upload catalog screenshot</div><div style={{fontSize:11,color:C.gray,marginTop:3}}>Any image format</div></>}
+          {previewUrl
+            ? <><img src={previewUrl} alt="preview" style={{maxHeight:120,maxWidth:"100%",borderRadius:8,marginBottom:6,objectFit:"contain"}}/><div style={{fontSize:11,color:C.green,fontWeight:600}}>{fileName}</div><div style={{fontSize:10,color:C.sub,marginTop:2}}>Tap to replace</div></>
+            : fileName
+              ? <><div style={{fontSize:22,marginBottom:6}}>✅</div><div style={{fontSize:13,color:C.green,fontWeight:600}}>{fileName}</div><div style={{fontSize:11,color:C.sub,marginTop:4}}>Tap to replace</div></>
+              : <><div style={{fontSize:22,marginBottom:6}}>🖼</div><div style={{fontSize:13,color:C.sub,fontWeight:500}}>Tap to upload catalog screenshot</div><div style={{fontSize:11,color:C.gray,marginTop:3}}>Any image format</div></>}
 
         </div>
 
@@ -314,7 +362,34 @@ function CatalogSlot({initial, onReady}) {
 
 // ── ItemCard ───────────────────────────────────────────────────────────────
 
-const ItemCard = ({it,idx,isAdmin,onDownload}) => (
+function ItemCard({it,idx,isAdmin,onDownload}) {
+
+  const [previews,setPreviews]=useState({});
+
+  useEffect(()=>{
+    let urls={};
+    const load=async()=>{
+      const next={};
+      if(it.catalogImage?.key){
+        const blob=await loadFileData(it.catalogImage.key);
+        if(blob){const u=URL.createObjectURL(blob);urls[it.catalogImage.key]=u;next["__catalog__"]=u;}
+      }
+      if(it.brandingFiles){
+        for(const [k,v] of Object.entries(it.brandingFiles)){
+          if(!v?.key) continue;
+          const name=v.name||"";
+          if(name.toLowerCase().endsWith(".pdf")) continue;
+          const blob=await loadFileData(v.key);
+          if(blob){const u=URL.createObjectURL(blob);urls[v.key]=u;next[k]=u;}
+        }
+      }
+      setPreviews(next);
+    };
+    load();
+    return ()=>{ Object.values(urls).forEach(u=>URL.revokeObjectURL(u)); };
+  },[it.catalogImage?.key, it.brandingFiles]);
+
+  return (
 
   <div style={{border:`1px solid ${C.border}`,borderRadius:14,padding:18,marginBottom:12}}>
 
@@ -322,11 +397,16 @@ const ItemCard = ({it,idx,isAdmin,onDownload}) => (
 
     {it.catalogImage?.name&&(
 
-      <div style={{background:C.green+"10",border:`1px solid ${C.green}30`,borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:13,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+      <div style={{background:C.green+"10",border:`1px solid ${C.green}30`,borderRadius:8,padding:"10px 12px",marginBottom:10}}>
 
-        <span style={{color:C.green,fontWeight:500}}>🖼 {it.catalogImage.name}</span>
+        {previews["__catalog__"]
+          ? <img src={previews["__catalog__"]} alt={it.catalogImage.name} style={{maxHeight:140,maxWidth:"100%",borderRadius:7,display:"block",marginBottom:6,objectFit:"contain"}}/>
+          : null}
 
-        {isAdmin&&it.catalogImage.key&&<button onClick={()=>onDownload(it.catalogImage.key,it.catalogImage.name)} style={{background:C.text,color:C.white,border:"none",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:font,fontWeight:600}}>Download</button>}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <span style={{fontSize:13,color:C.green,fontWeight:500}}>🖼 {it.catalogImage.name}</span>
+          {isAdmin&&it.catalogImage.key&&<button onClick={()=>onDownload(it.catalogImage.key,it.catalogImage.name)} style={{background:C.text,color:C.white,border:"none",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:font,fontWeight:600}}>Download</button>}
+        </div>
 
       </div>
 
@@ -352,17 +432,24 @@ const ItemCard = ({it,idx,isAdmin,onDownload}) => (
 
         <div style={{display:"flex",flexDirection:"column",gap:6}}>
 
-          {Object.entries(it.brandingFiles).filter(([,v])=>v).map(([k,v])=>(
-
-            <div key={k} style={{display:"flex",alignItems:"center",justifyContent:"space-between",background:C.green+"08",border:`1px solid ${C.green}22`,borderRadius:8,padding:"6px 12px"}}>
-
-              <span style={{fontSize:12,color:C.green,fontWeight:600}}>✓ {k}: {v.name}</span>
-
-              {isAdmin&&v.key&&<button onClick={()=>onDownload(v.key,v.name)} style={{background:C.text,color:C.white,border:"none",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:font,fontWeight:600}}>Download</button>}
-
+          {Object.entries(it.brandingFiles).filter(([,v])=>v).map(([k,v])=>{
+            const isPdf=(v.name||"").toLowerCase().endsWith(".pdf");
+            return (
+            <div key={k} style={{background:C.green+"08",border:`1px solid ${C.green}22`,borderRadius:8,padding:"8px 12px"}}>
+              {isPdf
+                ? <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"#ff3b3018",border:"1px solid #ff3b3030",borderRadius:7,padding:"4px 10px",marginBottom:6}}>
+                    <span style={{fontSize:16}}>📄</span>
+                    <span style={{fontSize:11,color:C.red,fontWeight:600}}>{v.name}</span>
+                  </div>
+                : previews[k]
+                  ? <img src={previews[k]} alt={v.name} style={{maxHeight:80,maxWidth:"100%",borderRadius:7,display:"block",marginBottom:6,objectFit:"contain"}}/>
+                  : null}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <span style={{fontSize:12,color:C.green,fontWeight:600}}>✓ {k}: {v.name}</span>
+                {isAdmin&&v.key&&<button onClick={()=>onDownload(v.key,v.name)} style={{background:C.text,color:C.white,border:"none",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:font,fontWeight:600}}>Download</button>}
+              </div>
             </div>
-
-          ))}
+          );})}
 
         </div>
 
@@ -374,7 +461,9 @@ const ItemCard = ({it,idx,isAdmin,onDownload}) => (
 
   </div>
 
-);
+  );
+
+}
 
 // ── ProfileCard ────────────────────────────────────────────────────────────
 
