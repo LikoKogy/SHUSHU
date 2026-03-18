@@ -368,7 +368,7 @@ function ProfileCard({profile,onSave}) {
 
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
 
-        {[["Email",profile.email||"—"],["Phone",profile.phone||"—"],["Business Address",profile.address||"—","1/-1"],["Info / Note",profile.infoNote||"—","1/-1"]].map(([l,v,col])=>(
+        {[["Email",profile.email||"—"],["Phone",profile.phone||"—"],["Shipping Address",profile.address||"—","1/-1"],["Info / Note",profile.infoNote||"—","1/-1"]].map(([l,v,col])=>(
 
           <div key={l} style={{background:C.bg2,borderRadius:10,padding:"10px 14px",gridColumn:col||"auto"}}>
 
@@ -398,7 +398,7 @@ function ProfileCard({profile,onSave}) {
 
         <div><div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:6,textTransform:"uppercase"}}>Phone</div><Inp value={draft.phone||""} onChange={v=>f("phone",v)} placeholder="+1 (555) 000-0000" type="tel"/></div>
 
-        <div style={{gridColumn:"1/-1"}}><div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:6,textTransform:"uppercase"}}>Business Address</div><Inp value={draft.address||""} onChange={v=>f("address",v)} placeholder="123 Main St, City, Country"/></div>
+        <div style={{gridColumn:"1/-1"}}><div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:6,textTransform:"uppercase"}}>Shipping Address</div><Inp value={draft.address||""} onChange={v=>f("address",v)} placeholder="Full shipping address"/></div>
 
         <div style={{gridColumn:"1/-1"}}>
 
@@ -818,6 +818,12 @@ export default function App() {
 
   const [authPass,setAuthPass]=useState("");
 
+  const [authEmail,setAuthEmail]=useState("");
+
+  const [authPhone,setAuthPhone]=useState("");
+
+  const [authAddress,setAuthAddress]=useState("");
+
   const [adminPass,setAdminPass]=useState("");
 
   const [authErr,setAuthErr]=useState("");
@@ -866,7 +872,15 @@ export default function App() {
 
     const u={...users,[authUser.toLowerCase()]:{name:authName.trim(),pass:authPass}};
 
-    saveUsers(u); setCurrentUser({username:authUser.toLowerCase(),name:authName.trim()});
+    const uname=authUser.toLowerCase();
+
+    saveUsers(u);
+
+    const initProfile={email:authEmail.trim(),phone:authPhone.trim(),address:authAddress.trim(),infoNote:""};
+
+    const p={...profiles,[uname]:initProfile}; saveProfiles(p);
+
+    setCurrentUser({username:uname,name:authName.trim()});
 
     setPortal("customer"); setView("list"); toast(`Welcome, ${authName.trim()}!`);
 
@@ -892,7 +906,7 @@ export default function App() {
 
   };
 
-  const logout=()=>{setPortal("home");setCurrentUser(null);setView("list");setAuthName("");setAuthUser("");setAuthPass("");setAuthErr("");};
+  const logout=()=>{setPortal("home");setCurrentUser(null);setView("list");setAuthName("");setAuthUser("");setAuthPass("");setAuthEmail("");setAuthPhone("");setAuthAddress("");setAuthErr("");};
 
   const nextId=()=>(orders.length?Math.max(...orders.map(o=>o.id))+1:1);
 
@@ -970,21 +984,41 @@ export default function App() {
 
   if(portal==="home") return(
 
-    <div style={{background:C.bg2,minHeight:"100vh",fontFamily:font,padding:"60px 24px 40px"}}>
+    <div style={{background:C.bg,minHeight:"100vh",fontFamily:font}}>
 
-      <div style={{textAlign:"center",marginBottom:48}}>
-
-        <div style={{fontSize:13,fontWeight:600,color:C.sub,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>GarmentCRM</div>
-
-        <div style={{fontSize:40,fontWeight:700,color:C.text,letterSpacing:-.5,lineHeight:1.1}}>Order management,<br/>done simply.</div>
-
+      {/* ── Top nav bar ── */}
+      <div style={{borderBottom:`1px solid ${C.border}`,padding:"0 32px",display:"flex",alignItems:"center",justifyContent:"space-between",height:60}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:32,height:32,borderRadius:10,background:C.text,display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <span style={{color:C.white,fontSize:15,fontWeight:800,letterSpacing:-.5}}>S</span>
+          </div>
+          <span style={{fontSize:16,fontWeight:700,color:C.text,letterSpacing:-.3}}>SHUSHU</span>
+        </div>
+        <span style={{fontSize:12,color:C.sub}}>Garment Order Platform</span>
       </div>
 
-      <div style={{maxWidth:380,margin:"0 auto",display:"flex",flexDirection:"column",gap:16}}>
+      {/* ── Hero ── */}
+      <div style={{background:"linear-gradient(160deg,#f5f5f7 0%,#ffffff 60%)",borderBottom:`1px solid ${C.border}`,padding:"64px 32px 56px",textAlign:"center"}}>
+        <div style={{display:"inline-block",background:C.bg3,borderRadius:99,padding:"5px 16px",fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.8,textTransform:"uppercase",marginBottom:20}}>Custom Garment Orders</div>
+        <div style={{fontSize:46,fontWeight:800,color:C.text,letterSpacing:-.8,lineHeight:1.1,marginBottom:16}}>From catalog to production,<br/>all in one place.</div>
+        <div style={{fontSize:16,color:C.sub,maxWidth:480,margin:"0 auto",lineHeight:1.6}}>Browse the catalog, place your order, upload your branding files — we handle the rest.</div>
+        <div style={{display:"flex",gap:24,justifyContent:"center",marginTop:40,flexWrap:"wrap"}}>
+          {[["📦","Custom Items","Style, SKU, color & size per item"],["🖼️","Catalog Uploads","Screenshot the item you want"],["🏷️","Branding Files","Logo, neck label, hang tag & more"]].map(([icon,t,d])=>(
+            <div key={t} style={{textAlign:"center",minWidth:140}}>
+              <div style={{fontSize:28,marginBottom:8}}>{icon}</div>
+              <div style={{fontWeight:600,fontSize:14,color:C.text,marginBottom:4}}>{t}</div>
+              <div style={{fontSize:12,color:C.sub,lineHeight:1.5}}>{d}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{maxWidth:400,margin:"0 auto",padding:"48px 24px 60px",display:"flex",flexDirection:"column",gap:16}}>
 
         <div style={{background:C.bg,borderRadius:18,padding:28,boxShadow:"0 2px 20px #0000000a"}}>
 
-          <div style={{fontSize:13,fontWeight:600,color:C.sub,marginBottom:18,letterSpacing:.3}}>CUSTOMER</div>
+          <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:4,letterSpacing:-.2}}>Customer Portal</div>
+          <div style={{fontSize:12,color:C.sub,marginBottom:18}}>Place and track your garment orders</div>
 
           <div style={{display:"flex",background:C.bg2,borderRadius:10,padding:3,marginBottom:18}}>
 
@@ -1010,6 +1044,16 @@ export default function App() {
 
             <Inp value={authPass} onChange={setAuthPass} placeholder="Password" type="password"/>
 
+            {authMode==="register"&&<>
+
+              <Inp value={authEmail} onChange={setAuthEmail} placeholder="Email address" type="email"/>
+
+              <Inp value={authPhone} onChange={setAuthPhone} placeholder="Phone number" type="tel"/>
+
+              <Inp value={authAddress} onChange={setAuthAddress} placeholder="Shipping address"/>
+
+            </>}
+
           </div>
 
           {authErr&&!authErr.includes("admin")&&<div style={{color:C.red,fontSize:13,marginTop:10}}>{authErr}</div>}
@@ -1020,7 +1064,8 @@ export default function App() {
 
         <div style={{background:C.bg,borderRadius:18,padding:24,boxShadow:"0 2px 20px #0000000a"}}>
 
-          <div style={{fontSize:13,fontWeight:600,color:C.sub,marginBottom:14,letterSpacing:.3}}>ADMIN ACCESS</div>
+          <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:2,letterSpacing:-.2}}>Admin Access</div>
+          <div style={{fontSize:12,color:C.sub,marginBottom:14}}>Manage all orders and customers</div>
 
           <div style={{display:"flex",gap:10}}>
 
@@ -1366,13 +1411,15 @@ export default function App() {
 
           const o=orders.find(x=>x.id===selected.id)||selected;
 
+          const cp=profiles[o.owner]||{};
+
           return(
 
             <div style={{maxWidth:640,margin:"0 auto"}}>
 
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
 
-                <div><div style={{fontSize:26,fontWeight:700,letterSpacing:-.3}}>{o.ownerName}</div><div style={{color:C.gray,fontSize:13,marginTop:4}}>Order #{o.id}</div></div>
+                <div><div style={{fontSize:26,fontWeight:700,letterSpacing:-.3}}>{o.ownerName}</div><div style={{color:C.gray,fontSize:13,marginTop:4}}>Order #{o.id} · @{o.owner}</div></div>
 
                 <Badge status={o.status}/>
 
@@ -1380,9 +1427,9 @@ export default function App() {
 
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:24}}>
 
-                {[["Email",o.email],["Phone",o.phone],["Placed",o.created],["Last Edited",o.lastEdited||o.created]].map(([l,v])=>(
+                {[["Email",cp.email||o.email],["Phone",cp.phone||o.phone],["Placed",o.created],["Last Edited",o.lastEdited||o.created],["Shipping Address",cp.address,"1/-1"]].filter(Boolean).map(([l,v,col])=>(
 
-                  <div key={l} style={{background:C.bg2,borderRadius:12,padding:"12px 16px"}}>
+                  <div key={l} style={{background:C.bg2,borderRadius:12,padding:"12px 16px",gridColumn:col||"auto"}}>
 
                     <div style={{fontSize:11,color:C.sub,fontWeight:600,marginBottom:4,textTransform:"uppercase",letterSpacing:.4}}>{l}</div>
 
