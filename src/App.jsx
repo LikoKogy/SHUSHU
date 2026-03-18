@@ -826,6 +826,14 @@ export default function App() {
 
   const [profiles,setProfiles]=useState({});
 
+  const [adminMeta,setAdminMeta]=useState({});
+
+  const [adminSection,setAdminSection]=useState("orders");
+
+  const [customerSearch,setCustomerSearch]=useState("");
+
+  const [deleteUserTarget,setDeleteUserTarget]=useState(null);
+
   const [loaded,setLoaded]=useState(false);
 
   const [toasts,setToasts]=useState([]);
@@ -882,6 +890,10 @@ export default function App() {
 
         if (pd) setProfiles(Object.fromEntries(pd.map(r=>[r.username,{email:r.email||"",phone:r.phone||"",address:r.address||"",infoNote:r.info_note||""}])));
 
+        const { data: md } = await supabase.from("crm_admin_meta").select();
+
+        if (md) setAdminMeta(Object.fromEntries(md.map(r=>[r.username,{starred:r.starred||false,adminNote:r.admin_note||""}])));
+
       } else {
 
         try{const r=storage.get("crm-users");if(r)setUsers(JSON.parse(r.value));}catch(_){}
@@ -928,6 +940,64 @@ export default function App() {
       storage.set("crm-profiles",JSON.stringify(p));
 
     }
+
+  };
+
+  const saveAdminMeta=async m=>{
+
+    setAdminMeta(m);
+
+    if(isCloud){
+
+      await supabase.from("crm_admin_meta").upsert(Object.entries(m).map(([username,v])=>({username,starred:v.starred||false,admin_note:v.adminNote||""})));
+
+    }
+
+  };
+
+  const handleToggleStar=async username=>{
+
+    const cur=adminMeta[username]||{starred:false,adminNote:""};
+
+    await saveAdminMeta({...adminMeta,[username]:{...cur,starred:!cur.starred}});
+
+  };
+
+  const handleSaveAdminNote=async (username,note)=>{
+
+    const cur=adminMeta[username]||{starred:false,adminNote:""};
+
+    await saveAdminMeta({...adminMeta,[username]:{...cur,adminNote:note}});
+
+    toast("Note saved.");
+
+  };
+
+  const handleDeleteUser=async username=>{
+
+    const u={...users}; delete u[username];
+
+    const p={...profiles}; delete p[username];
+
+    await saveUsers(u);
+
+    await saveProfiles(p);
+
+    if(isCloud){
+
+      await supabase.from("crm_admin_meta").delete().eq("username",username);
+
+      await supabase.from("crm_orders").delete().in("id",(orders.filter(o=>o.owner===username||o.ownerName===users[username]?.name)).map(o=>o.id));
+
+    }
+
+    await saveOrders(orders.filter(o=>o.owner!==username));
+
+    const m={...adminMeta}; delete m[username]; setAdminMeta(m);
+
+    setDeleteUserTarget(null);
+
+    toast("Customer deleted.");
 
   };
 
@@ -1327,13 +1397,76 @@ export default function App() {
 
     <div style={{background:C.bg2,minHeight:"100vh",fontFamily:font}}>
 
-      <Nav title={<span>GarmentCRM <span style={{fontSize:12,fontWeight:600,color:C.sub,background:C.bg3,borderRadius:99,padding:"2px 9px",marginLeft:6}}>Admin</span></span>} sub="All orders"
+      <Nav title={<span>GarmentCRM <span style={{fontSize:12,fontWeight:600,color:C.sub,background:C.bg3,borderRadius:99,padding:"2px 9px",marginLeft:6}}>Admin</span></span>} sub={adminSection==="orders"?"All orders":"Customers"}
 
-        right={<>{view!=="list"&&<GhostBtn onClick={()=>setView("list")} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>← Dashboard</GhostBtn>}<GhostBtn onClick={logout} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>Sign Out</GhostBtn></>}/>
+        right={<>{view!=="list"&&<GhostBtn onClick={()=>{setView("list");setAdminSection("orders");}} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>← Dashboard</GhostBtn>}<GhostBtn onClick={logout} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>Sign Out</GhostBtn></>}/>
 
       <Wrap>
 
-        {view==="list"&&(<>
+        {view==="list"&&<div style={{display:"flex",gap:8,marginBottom:24}}>
+          <PillBtn active={adminSection==="orders"} onClick={()=>setAdminSection("orders")}>Orders</PillBtn>
+          <PillBtn active={adminSection==="customers"} onClick={()=>setAdminSection("customers")}>Customers ({Object.keys(users).length})</PillBtn>
+        </div>}
+
+        {view==="list"&&adminSection==="customers"&&(()=>{
+          const allUsers=Object.entries(users).filter(([username])=>username!=="admin");
+          const starred=allUsers.filter(([u])=>adminMeta[u]?.starred);
+          const unstarred=allUsers.filter(([u])=>!adminMeta[u]?.starred);
+          const sorted=[...starred,...unstarred];
+          const filtered=sorted.filter(([u,v])=>{
+            const q=customerSearch.toLowerCase();
+            return !q||u.includes(q)||v.name?.toLowerCase().includes(q)||(profiles[u]?.email||"").toLowerCase().includes(q);
+          });
+          return(<>
+            <div style={{display:"flex",gap:12,marginBottom:20,alignItems:"center"}}>
+              <input value={customerSearch} onChange={e=>setCustomerSearch(e.target.value)} placeholder="Search customers…" style={{background:C.bg,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 14px",fontFamily:font,fontSize:14,flex:1,outline:"none"}}/>
+            </div>
+            {filtered.length===0&&<div style={{textAlign:"center",color:C.sub,padding:"60px 0",fontSize:15}}>No customers found.</div>}
+            <div style={{display:"flex",flexDirection:"column",gap:14}}>
+              {filtered.map(([username,u])=>{
+                const prof=profiles[username]||{};
+                const meta=adminMeta[username]||{starred:false,adminNote:""};
+                const userOrders=orders.filter(o=>o.owner===username);
+                const [noteVal,setNoteVal]=useState(meta.adminNote||"");
+                return(
+                  <div key={username} style={{background:C.bg,border:`1px solid ${meta.starred?C.amber:C.border}`,borderRadius:16,padding:20,boxShadow:meta.starred?"0 0 0 1px "+C.amber+"40":"none"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+                      <div>
+                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+                          <span style={{fontSize:17,fontWeight:700,color:C.text}}>{u.name}</span>
+                          {meta.starred&&<span style={{fontSize:13}}>⭐</span>}
+                        </div>
+                        <div style={{fontSize:13,color:C.sub}}>@{username}</div>
+                      </div>
+                      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                        <button onClick={()=>handleToggleStar(username)} title={meta.starred?"Unstar":"Star"} style={{background:meta.starred?C.amber+"20":"C.bg2",border:`1px solid ${meta.starred?C.amber:C.border}`,borderRadius:8,padding:"6px 12px",cursor:"pointer",fontSize:14,fontFamily:font,color:meta.starred?C.amber:C.sub}}>{meta.starred?"★ Starred":"☆ Star"}</button>
+                        <button onClick={()=>setDeleteUserTarget(username)} style={{background:"transparent",color:C.red,border:`1px solid ${C.red}30`,borderRadius:8,padding:"6px 12px",fontSize:13,cursor:"pointer",fontFamily:font}}>Delete</button>
+                      </div>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8,marginBottom:14}}>
+                      {[["Email",prof.email],["Phone",prof.phone],["Orders",userOrders.length],["Units",userOrders.reduce((s,o)=>s+totalUnits(o.items),0)]].map(([l,v])=>(
+                        <div key={l} style={{background:C.bg2,borderRadius:10,padding:"8px 12px"}}>
+                          <div style={{fontSize:10,color:C.sub,fontWeight:600,textTransform:"uppercase",letterSpacing:.3,marginBottom:2}}>{l}</div>
+                          <div style={{fontSize:13,fontWeight:500}}>{v||"—"}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {prof.address&&<div style={{fontSize:13,color:C.sub,marginBottom:10}}>📍 {prof.address}</div>}
+                    <div>
+                      <div style={{fontSize:11,color:C.sub,fontWeight:600,textTransform:"uppercase",letterSpacing:.3,marginBottom:6}}>Admin Note</div>
+                      <div style={{display:"flex",gap:8}}>
+                        <input value={noteVal} onChange={e=>setNoteVal(e.target.value)} placeholder="Add a private note about this customer…" style={{background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:8,padding:"8px 12px",fontFamily:font,fontSize:13,flex:1,outline:"none"}}/>
+                        <button onClick={()=>handleSaveAdminNote(username,noteVal)} style={{background:C.text,color:C.white,border:"none",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:font,fontSize:13,fontWeight:600,whiteSpace:"nowrap"}}>Save</button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>);
+        })()}
+
+        {view==="list"&&adminSection==="orders"&&(<>
 
           <div className="stat-row" style={{display:"flex",gap:12,marginBottom:28,flexWrap:"wrap"}}>
 
@@ -1502,6 +1635,8 @@ export default function App() {
       </Wrap>
 
       {deleteTarget&&<Modal onClose={()=>setDeleteTarget(null)}><div style={{fontSize:18,fontWeight:700,marginBottom:8}}>Delete this order?</div><div style={{color:C.sub,fontSize:14,marginBottom:24}}>Order #{deleteTarget.id} from <strong>{deleteTarget.ownerName}</strong> will be permanently removed.</div><div style={{display:"flex",gap:10}}><GhostBtn onClick={()=>setDeleteTarget(null)} style={{flex:1,color:C.sub}}>Cancel</GhostBtn><button onClick={()=>handleDelete(deleteTarget.id)} style={{flex:1,background:C.red,color:C.white,border:"none",borderRadius:10,padding:"11px",cursor:"pointer",fontFamily:font,fontWeight:600,fontSize:15}}>Delete</button></div></Modal>}
+
+      {deleteUserTarget&&<Modal onClose={()=>setDeleteUserTarget(null)}><div style={{fontSize:18,fontWeight:700,marginBottom:8}}>Delete customer?</div><div style={{color:C.sub,fontSize:14,marginBottom:24}}><strong>{users[deleteUserTarget]?.name}</strong> (@{deleteUserTarget}) and all their orders will be permanently removed.</div><div style={{display:"flex",gap:10}}><GhostBtn onClick={()=>setDeleteUserTarget(null)} style={{flex:1,color:C.sub}}>Cancel</GhostBtn><button onClick={()=>handleDeleteUser(deleteUserTarget)} style={{flex:1,background:C.red,color:C.white,border:"none",borderRadius:10,padding:"11px",cursor:"pointer",fontFamily:font,fontWeight:600,fontSize:15}}>Delete</button></div></Modal>}
 
       <Toast toasts={toasts}/>
 
