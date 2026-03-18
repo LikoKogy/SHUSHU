@@ -964,9 +964,13 @@ export default function App() {
 
     if(!data){toast("File not found.","warn");return;}
 
+    const res=await fetch(data);
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
     const a=document.createElement("a");
-
-    a.href=data; a.download=name; a.click();
+    a.href=url; a.download=name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
   };
 
