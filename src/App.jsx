@@ -1091,7 +1091,7 @@ export default function App() {
 
   const handleAdminLogin=()=>{
 
-    if(adminPass===ADMIN_PASS){setPortal("admin");setView("list");setAdminPass("");toast("Admin access granted.");}
+    if(adminPass===ADMIN_PASS){localStorage.setItem("crm-session",JSON.stringify({portal:"admin",currentUser:{username:"admin",name:"Admin"},view:"list",selectedId:null}));setPortal("admin");setView("list");setAdminPass("");toast("Admin access granted.");}
 
     else setAuthErr("Incorrect admin password.");
 
