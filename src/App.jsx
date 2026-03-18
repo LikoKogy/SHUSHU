@@ -900,11 +900,18 @@ export default function App() {
 
     const id=nextId();
 
+    const moveFile=(oldKey)=>{
+      const newKey=oldKey.replace(String(form._tempOid),String(id));
+      const data=storage.get(oldKey);
+      if(data){storage.set(newKey,data.value);storage.delete(oldKey);}
+      return newKey;
+    };
+
     const items=form.items.map((it,i)=>{
 
-      const catalogImage=it.catalogImage?.key?{...it.catalogImage,key:it.catalogImage.key.replace(String(form._tempOid),String(id))}:it.catalogImage;
+      const catalogImage=it.catalogImage?.key?{...it.catalogImage,key:moveFile(it.catalogImage.key)}:it.catalogImage;
 
-      const brandingFiles=Object.fromEntries(Object.entries(it.brandingFiles||{}).map(([k,v])=>[k,v?.key?{...v,key:v.key.replace(String(form._tempOid),String(id))}:v]));
+      const brandingFiles=Object.fromEntries(Object.entries(it.brandingFiles||{}).map(([k,v])=>[k,v?.key?{...v,key:moveFile(v.key)}:v]));
 
       return {...it,catalogImage,brandingFiles};
 
