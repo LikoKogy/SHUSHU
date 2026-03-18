@@ -5,21 +5,44 @@ on:
     branches:
       - 'claude/**'
 
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
-  merge-to-main:
+  merge-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Merge to main and deploy
+      - name: Merge to main
         run: |
           git config user.email "auto-deploy@shushu.app"
           git config user.name "Auto Deploy"
           git checkout main
           git merge origin/${{ github.ref_name }} --no-edit
           git push origin main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install
+
+      - run: npm run build
+
+      - uses: actions/configure-pages@v4
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
