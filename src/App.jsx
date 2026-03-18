@@ -24,7 +24,7 @@ const BRAND_FILES = ["Logo Design","Neck Label","Washing / Care Label","Hang Tag
 
 const STATUS = { Active:C.green, Pending:C.amber, Draft:C.gray, Archived:C.purple };
 
-const ADMIN_PASS = "Shushu1881";
+const ADMIN_PASS = "qwqw";
 
 const totalUnits = items => items.reduce((s,it)=>s+SIZES.reduce((a,sz)=>a+(parseInt(it.sizes[sz])||0),0),0);
 
