@@ -941,9 +941,10 @@ export default function App() {
 
       }
 
-      setOrders(await fetchOrders());
+      const loadedOrders=await fetchOrders();
+      setOrders(loadedOrders);
 
-      try{const s=localStorage.getItem("crm-session");if(s){const{portal:p,currentUser:cu}=JSON.parse(s);if(p&&cu){setPortal(p);setCurrentUser(cu);}}}catch(_){}
+      try{const s=localStorage.getItem("crm-session");if(s){const{portal:p,currentUser:cu,view:v,selectedId:sid}=JSON.parse(s);if(p&&cu){setPortal(p);setCurrentUser(cu);if(v)setView(v);if(sid&&loadedOrders){const o=loadedOrders.find(x=>x.id===sid);if(o)setSelected(o);}}}}catch(_){}
 
       setLoaded(true);
 
@@ -1097,6 +1098,15 @@ export default function App() {
   };
 
   const logout=()=>{localStorage.removeItem("crm-session");setPortal("home");setCurrentUser(null);setView("list");setAuthName("");setAuthUser("");setAuthPass("");setAuthErr("");};
+
+  useEffect(()=>{
+    if(portal!=="home"&&currentUser){
+      try{
+        const s=JSON.parse(localStorage.getItem("crm-session")||"{}");
+        localStorage.setItem("crm-session",JSON.stringify({...s,view,selectedId:selected?.id||null}));
+      }catch(_){}
+    }
+  },[view,selected,portal,currentUser]);
 
   const nextId=()=>(orders.length?Math.max(...orders.map(o=>o.id))+1:1);
 
