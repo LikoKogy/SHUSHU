@@ -1024,9 +1024,15 @@ export default function App() {
 
     if(isCloud){
 
+      await supabase.from("crm_users").delete().eq("username",username);
+
+      await supabase.from("crm_profiles").delete().eq("username",username);
+
       await supabase.from("crm_admin_meta").delete().eq("username",username);
 
-      await supabase.from("crm_orders").delete().in("id",(orders.filter(o=>o.owner===username||o.ownerName===users[username]?.name)).map(o=>o.id));
+      const userOrderIds=orders.filter(o=>o.owner===username).map(o=>o.id);
+
+      if(userOrderIds.length) await supabase.from("crm_orders").delete().in("id",userOrderIds);
 
     }
 
