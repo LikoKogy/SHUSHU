@@ -812,6 +812,45 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
 }
 
+// ── Customer Card (admin) ───────────────────────────────────────────────────
+
+function CustomerCard({username,u,prof,meta,userOrders,onToggleStar,onSaveNote,onDelete}){
+  const [noteVal,setNoteVal]=useState(meta.adminNote||"");
+  return(
+    <div style={{background:C.bg,border:`1px solid ${meta.starred?C.amber:C.border}`,borderRadius:16,padding:20,boxShadow:meta.starred?"0 0 0 1px "+C.amber+"40":"none"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+        <div>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+            <span style={{fontSize:17,fontWeight:700,color:C.text}}>{u.name}</span>
+            {meta.starred&&<span style={{fontSize:13}}>⭐</span>}
+          </div>
+          <div style={{fontSize:13,color:C.sub}}>@{username}</div>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <button onClick={()=>onToggleStar(username)} style={{background:meta.starred?C.amber+"20":"transparent",border:`1px solid ${meta.starred?C.amber:C.border}`,borderRadius:8,padding:"6px 12px",cursor:"pointer",fontSize:14,fontFamily:font,color:meta.starred?C.amber:C.sub}}>{meta.starred?"★ Starred":"☆ Star"}</button>
+          <button onClick={()=>onDelete(username)} style={{background:"transparent",color:C.red,border:`1px solid ${C.red}30`,borderRadius:8,padding:"6px 12px",fontSize:13,cursor:"pointer",fontFamily:font}}>Delete</button>
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8,marginBottom:14}}>
+        {[["Email",prof.email],["Phone",prof.phone],["Orders",userOrders.length],["Units",userOrders.reduce((s,o)=>s+totalUnits(o.items),0)]].map(([l,v])=>(
+          <div key={l} style={{background:C.bg2,borderRadius:10,padding:"8px 12px"}}>
+            <div style={{fontSize:10,color:C.sub,fontWeight:600,textTransform:"uppercase",letterSpacing:.3,marginBottom:2}}>{l}</div>
+            <div style={{fontSize:13,fontWeight:500}}>{v||"—"}</div>
+          </div>
+        ))}
+      </div>
+      {prof.address&&<div style={{fontSize:13,color:C.sub,marginBottom:10}}>📍 {prof.address}</div>}
+      <div>
+        <div style={{fontSize:11,color:C.sub,fontWeight:600,textTransform:"uppercase",letterSpacing:.3,marginBottom:6}}>Admin Note</div>
+        <div style={{display:"flex",gap:8}}>
+          <input value={noteVal} onChange={e=>setNoteVal(e.target.value)} placeholder="Add a private note about this customer…" style={{background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:8,padding:"8px 12px",fontFamily:font,fontSize:13,flex:1,outline:"none"}}/>
+          <button onClick={()=>onSaveNote(username,noteVal)} style={{background:C.text,color:C.white,border:"none",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:font,fontSize:13,fontWeight:600,whiteSpace:"nowrap"}}>Save</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ───────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -1423,45 +1462,15 @@ export default function App() {
             </div>
             {filtered.length===0&&<div style={{textAlign:"center",color:C.sub,padding:"60px 0",fontSize:15}}>No customers found.</div>}
             <div style={{display:"flex",flexDirection:"column",gap:14}}>
-              {filtered.map(([username,u])=>{
-                const prof=profiles[username]||{};
-                const meta=adminMeta[username]||{starred:false,adminNote:""};
-                const userOrders=orders.filter(o=>o.owner===username);
-                const [noteVal,setNoteVal]=useState(meta.adminNote||"");
-                return(
-                  <div key={username} style={{background:C.bg,border:`1px solid ${meta.starred?C.amber:C.border}`,borderRadius:16,padding:20,boxShadow:meta.starred?"0 0 0 1px "+C.amber+"40":"none"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-                      <div>
-                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                          <span style={{fontSize:17,fontWeight:700,color:C.text}}>{u.name}</span>
-                          {meta.starred&&<span style={{fontSize:13}}>⭐</span>}
-                        </div>
-                        <div style={{fontSize:13,color:C.sub}}>@{username}</div>
-                      </div>
-                      <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                        <button onClick={()=>handleToggleStar(username)} title={meta.starred?"Unstar":"Star"} style={{background:meta.starred?C.amber+"20":"C.bg2",border:`1px solid ${meta.starred?C.amber:C.border}`,borderRadius:8,padding:"6px 12px",cursor:"pointer",fontSize:14,fontFamily:font,color:meta.starred?C.amber:C.sub}}>{meta.starred?"★ Starred":"☆ Star"}</button>
-                        <button onClick={()=>setDeleteUserTarget(username)} style={{background:"transparent",color:C.red,border:`1px solid ${C.red}30`,borderRadius:8,padding:"6px 12px",fontSize:13,cursor:"pointer",fontFamily:font}}>Delete</button>
-                      </div>
-                    </div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8,marginBottom:14}}>
-                      {[["Email",prof.email],["Phone",prof.phone],["Orders",userOrders.length],["Units",userOrders.reduce((s,o)=>s+totalUnits(o.items),0)]].map(([l,v])=>(
-                        <div key={l} style={{background:C.bg2,borderRadius:10,padding:"8px 12px"}}>
-                          <div style={{fontSize:10,color:C.sub,fontWeight:600,textTransform:"uppercase",letterSpacing:.3,marginBottom:2}}>{l}</div>
-                          <div style={{fontSize:13,fontWeight:500}}>{v||"—"}</div>
-                        </div>
-                      ))}
-                    </div>
-                    {prof.address&&<div style={{fontSize:13,color:C.sub,marginBottom:10}}>📍 {prof.address}</div>}
-                    <div>
-                      <div style={{fontSize:11,color:C.sub,fontWeight:600,textTransform:"uppercase",letterSpacing:.3,marginBottom:6}}>Admin Note</div>
-                      <div style={{display:"flex",gap:8}}>
-                        <input value={noteVal} onChange={e=>setNoteVal(e.target.value)} placeholder="Add a private note about this customer…" style={{background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:8,padding:"8px 12px",fontFamily:font,fontSize:13,flex:1,outline:"none"}}/>
-                        <button onClick={()=>handleSaveAdminNote(username,noteVal)} style={{background:C.text,color:C.white,border:"none",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:font,fontSize:13,fontWeight:600,whiteSpace:"nowrap"}}>Save</button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {filtered.map(([username,u])=>(
+                <CustomerCard key={username} username={username} u={u}
+                  prof={profiles[username]||{}}
+                  meta={adminMeta[username]||{starred:false,adminNote:""}}
+                  userOrders={orders.filter(o=>o.owner===username)}
+                  onToggleStar={handleToggleStar}
+                  onSaveNote={handleSaveAdminNote}
+                  onDelete={setDeleteUserTarget}/>
+              ))}
             </div>
           </>);
         })()}
