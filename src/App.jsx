@@ -28,7 +28,7 @@ const ADMIN_PASS = "qwqw";
 
 const totalUnits = items => items.reduce((s,it)=>s+SIZES.reduce((a,sz)=>a+(parseInt(it.sizes[sz])||0),0),0);
 
-const emptyItem  = () => ({ style:"", colors:"", sizes:Object.fromEntries(SIZES.map(s=>[s,0])), logos:[], catalogImage:null, brandingFiles:Object.fromEntries(BRAND_FILES.map(k=>[k,null])), itemNotes:"" });
+const emptyItem  = () => ({ style:"", colors:"", sizes:Object.fromEntries(SIZES.map(s=>[s,0])), logos:[], logoNote:"", catalogImage:null, brandingFiles:Object.fromEntries(BRAND_FILES.map(k=>[k,null])), itemNotes:"" });
 
 const emptyForm  = () => ({ notes:"", items:[emptyItem()] });
 
@@ -431,7 +431,8 @@ function ItemCard({it,idx,isAdmin,onDownload}) {
 
     </div>
 
-    {it.logos?.length>0&&<div style={{fontSize:12,color:C.sub,marginBottom:8}}>Logos: {it.logos.join(", ")}</div>}
+    {it.logos?.length>0&&<div style={{fontSize:12,color:C.sub,marginBottom:it.logoNote?2:8}}>Logos: {it.logos.join(", ")}</div>}
+    {it.logoNote&&<div style={{fontSize:12,color:C.sub,marginBottom:8,fontStyle:"italic"}}>Placement: {it.logoNote}</div>}
 
     {it.brandingFiles&&Object.entries(it.brandingFiles).some(([,v])=>v)&&(
 
@@ -791,6 +792,8 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
               ))}
 
             </div>
+
+            <textarea value={it.logoNote||""} onChange={e=>setItemField(i,"logoNote",e.target.value)} placeholder="Placement details (e.g. 3″ wide, centered 2″ below collar)…" rows={2} style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 12px",fontFamily:font,fontSize:13,resize:"vertical",outline:"none",marginBottom:20}}/>
 
             <div style={{borderTop:`1px solid ${C.border}`,paddingTop:16}}>
 
