@@ -199,7 +199,7 @@ function FilePreview({file, url}) {
   return <img src={url} alt="preview" style={{maxHeight:80,maxWidth:"100%",borderRadius:7,marginBottom:6,objectFit:"contain",display:"block"}}/>;
 }
 
-function UploadSlot({label, required, initial, onReady, showShareToggle, isShared, onToggleShare, lockedByShared}) {
+function UploadSlot({label, required, initial, onReady, showShareToggle, isShared, onToggleShare, lockedByShared, isDefault, onToggleDefault}) {
 
   const [fileName, setFileName] = useState(initial?.name||null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -288,6 +288,15 @@ function UploadSlot({label, required, initial, onReady, showShareToggle, isShare
         </div>
 
       </label>
+
+      {displayName && !lockedByShared && (
+        <button onClick={e=>{e.preventDefault();onToggleDefault&&onToggleDefault(liveFile);}} style={{marginTop:5,display:"flex",alignItems:"center",gap:5,background:"transparent",border:"none",cursor:"pointer",padding:"2px 0",fontFamily:font}}>
+          <div style={{width:15,height:15,borderRadius:3,border:`1.5px solid ${isDefault?C.green:C.border}`,background:isDefault?C.green:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            {isDefault&&<span style={{fontSize:9,color:C.white,fontWeight:900,lineHeight:1}}>✓</span>}
+          </div>
+          <span style={{fontSize:11,color:isDefault?C.green:C.sub,fontWeight:500}}>Use for all new items</span>
+        </button>
+      )}
 
     </div>
 
@@ -563,6 +572,10 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
   const [sharedToggles, setSharedToggles] = useState(Object.fromEntries(BRAND_FILES.map(k=>[k,false])));
 
+  const [defaultBrandingFiles, setDefaultBrandingFiles] = useState(Object.fromEntries(BRAND_FILES.map(k=>[k,null])));
+
+  const defaultBrandingFilesQueue = useRef({});
+
   const [sharedNotesOn, setSharedNotesOn] = useState(false);
 
   const [sharedNotes, setSharedNotes] = useState("");
@@ -579,7 +592,21 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
   const toggleLogo   = useCallback((i,l)    => setItems(p=>p.map((it,j)=>{if(j!==i)return it;const logos=it.logos.includes(l)?it.logos.filter(x=>x!==l):[...it.logos,l];return{...it,logos};})),[]);
 
-  const addItem      = useCallback(()=>{ pendingFiles.current[items.length]={}; setItems(p=>[...p,emptyItem()]); },[items.length]);
+  const addItem      = useCallback(()=>{
+    const newIdx=items.length;
+    pendingFiles.current[newIdx]={};
+    BRAND_FILES.forEach(fname=>{
+      if(defaultBrandingFilesQueue.current[fname]) pendingFiles.current[newIdx][fname]=defaultBrandingFilesQueue.current[fname];
+    });
+    setItems(p=>{
+      const newItem=emptyItem();
+      BRAND_FILES.forEach(fname=>{
+        const df=defaultBrandingFilesQueue.current[fname];
+        if(df) newItem.brandingFiles[fname]={name:df.name,key:null};
+      });
+      return [...p,newItem];
+    });
+  },[items.length]);
 
   const removeItem   = useCallback(i=>{
 
@@ -791,6 +818,21 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
                     lockedByShared={i>0&&isShared}
 
+                    isDefault={defaultBrandingFiles[fname]?.itemIdx===i}
+
+                    onToggleDefault={(liveFile)=>{
+                      if(defaultBrandingFiles[fname]?.itemIdx===i){
+                        setDefaultBrandingFiles(p=>({...p,[fname]:null}));
+                        defaultBrandingFilesQueue.current[fname]=undefined;
+                      } else {
+                        const file=liveFile||pendingFiles.current[i]?.[fname];
+                        if(file){
+                          setDefaultBrandingFiles(p=>({...p,[fname]:{name:file.name,itemIdx:i}}));
+                          defaultBrandingFilesQueue.current[fname]=file;
+                        }
+                      }
+                    }}
+
                     onReady={f=>{
 
                       queueFile(i,fname,f);
@@ -799,6 +841,11 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
                         items.forEach((_,j)=>{ if(j!==0) queueFile(j,fname,f); });
 
+                      }
+
+                      if(defaultBrandingFiles[fname]?.itemIdx===i){
+                        setDefaultBrandingFiles(p=>({...p,[fname]:{name:f.name,itemIdx:i}}));
+                        defaultBrandingFilesQueue.current[fname]=f;
                       }
 
                     }}
