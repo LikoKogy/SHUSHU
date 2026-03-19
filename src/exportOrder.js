@@ -234,7 +234,7 @@ export async function buildExcelBlob(order) {
     // Header
     const bfHRow = ws.getRow(r);
     bfHRow.height = 22;
-    [["A", "BRANDING FILES"], ["B", "File Name"], ["C", "Notes"]].forEach(([col, label]) => {
+    [["A", "BRANDING FILES"], ["B", "File(s)"], ["C", "Notes"]].forEach(([col, label]) => {
       const cell = ws.getCell(`${col}${r}`);
       cell.value = label;
       cell.fill = mkFill(C.brandHeadBg);
@@ -245,36 +245,44 @@ export async function buildExcelBlob(order) {
     ws.mergeCells(`C${r}:J${r}`);
     r++;
 
-    BRAND_FILES.forEach((bf, bi) => {
-      const f    = item.brandingFiles?.[bf];
-      const note = item.brandingFileNotes?.[bf] || "";
-      const bg   = bi % 2 === 1 ? C.rowAlt : "FFFFFF";
-      const bfRow = ws.getRow(r);
-      bfRow.height = 20;
+    let bfColorIdx = 0;
+    BRAND_FILES.forEach((bf) => {
+      const rawFiles = item.brandingFiles?.[bf];
+      const files    = Array.isArray(rawFiles) ? rawFiles : (rawFiles ? [rawFiles] : []);
+      const note     = item.brandingFileNotes?.[bf] || "";
+      const rowItems = files.length ? files : [null];
 
-      const ac = ws.getCell(`A${r}`);
-      ac.value = bf;
-      ac.fill = mkFill(bg);
-      ac.font = mkFont(false, "374151", 11);
-      ac.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-      ac.border = mkBorder();
+      rowItems.forEach((f, fi) => {
+        const bg = bfColorIdx % 2 === 1 ? C.rowAlt : "FFFFFF";
+        const bfRow = ws.getRow(r);
+        bfRow.height = 20;
 
-      const bc = ws.getCell(`B${r}`);
-      bc.value = f ? f.name : "—";
-      bc.fill = mkFill(bg);
-      bc.font = mkFont(false, f ? "111827" : C.missingFg, 11);
-      bc.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-      bc.border = mkBorder();
+        const ac = ws.getCell(`A${r}`);
+        ac.value = fi === 0 ? bf : "";
+        ac.fill = mkFill(bg);
+        ac.font = mkFont(fi === 0, "374151", 11);
+        ac.alignment = { vertical: "middle", horizontal: "left", indent: fi === 0 ? 1 : 3 };
+        ac.border = mkBorder();
 
-      const cc = ws.getCell(`C${r}`);
-      cc.value = note;
-      cc.fill = mkFill(bg);
-      cc.font = mkFont(false, "374151", 11);
-      cc.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
-      cc.border = mkBorder();
-      ws.mergeCells(`C${r}:J${r}`);
+        const bc = ws.getCell(`B${r}`);
+        bc.value = f ? f.name : "—";
+        bc.fill = mkFill(bg);
+        bc.font = mkFont(false, f ? "111827" : C.missingFg, 11);
+        bc.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+        bc.border = mkBorder();
 
-      r++;
+        const cc = ws.getCell(`C${r}`);
+        cc.value = fi === 0 ? note : "";
+        cc.fill = mkFill(bg);
+        cc.font = mkFont(false, "374151", 11);
+        cc.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+        cc.border = mkBorder();
+        ws.mergeCells(`C${r}:J${r}`);
+
+        r++;
+      });
+
+      bfColorIdx++;
     });
 
     // ── Item notes ───────────────────────────────────────────────
@@ -320,10 +328,15 @@ export async function downloadZip(order, loadFileFn, onProgress) {
       tasks.push({ folder: itemLabel, key: item.catalogImage.key, name: item.catalogImage.name });
     }
     BRAND_FILES.forEach(bf => {
-      const f = item.brandingFiles?.[bf];
-      if (f?.key) {
-        tasks.push({ folder: itemLabel, key: f.key, name: `${safeFilename(bf)}_${f.name}` });
-      }
+      const rawFiles = item.brandingFiles?.[bf];
+      const files = Array.isArray(rawFiles) ? rawFiles : (rawFiles ? [rawFiles] : []);
+      files.forEach((f, fi) => {
+        if (f?.key) {
+          const prefix = safeFilename(bf);
+          const suffix = files.length > 1 ? `_${fi + 1}` : "";
+          tasks.push({ folder: itemLabel, key: f.key, name: `${prefix}${suffix}_${f.name}` });
+        }
+      });
     });
   });
 

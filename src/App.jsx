@@ -30,7 +30,12 @@ const ADMIN_PASS = "qwqw";
 
 const totalUnits = items => items.reduce((s,it)=>s+SIZES.reduce((a,sz)=>a+(parseInt(it.sizes[sz])||0),0),0);
 
-const emptyItem  = () => ({ style:"", colors:"", sizes:Object.fromEntries(SIZES.map(s=>[s,0])), logos:[], logoNote:"", catalogImage:null, brandingFiles:Object.fromEntries(BRAND_FILES.map(k=>[k,null])), brandingFileNotes:{}, itemNotes:"" });
+const emptyItem  = () => ({ style:"", colors:"", sizes:Object.fromEntries(SIZES.map(s=>[s,0])), logos:[], logoNote:"", catalogImage:null, brandingFiles:Object.fromEntries(BRAND_FILES.map(k=>[k,[]])), brandingFileNotes:{}, itemNotes:"" });
+
+// Normalize brandingFiles from old single-object format to new array format
+function normBF(bf) {
+  return Object.fromEntries(BRAND_FILES.map(k=>{const v=bf?.[k];if(!v)return[k,[]];if(Array.isArray(v))return[k,v];return[k,[v]];}));
+}
 
 const emptyForm  = () => ({ notes:"", items:[emptyItem()] });
 
@@ -407,6 +412,101 @@ function CatalogSlot({initial, onReady}) {
 
 }
 
+// ── MultiBrandingSlot ───────────────────────────────────────────────────────
+// Handles multiple file uploads + a note field for one branding file type.
+
+function MultiBrandingSlot({label, files=[], onChange, showShareToggle, isShared, onToggleShare, lockedByShared, noteValue, onNoteChange}) {
+
+  const [previews, setPreviews] = useState({});
+
+  const depsKey = files.map(f=>f.key||`_${f.name}`).join(",");
+
+  useEffect(()=>{
+    let mounted=true;
+    const urls={};
+    (async()=>{
+      const next={};
+      for(let fi=0;fi<files.length;fi++){
+        const f=files[fi];
+        const name=f.name||"";
+        if(name.toLowerCase().endsWith(".pdf")) continue;
+        let blob=null;
+        if(f._file){blob=f._file;}
+        else if(f.key){blob=await loadFileData(f.key);}
+        if(blob&&mounted){const u=URL.createObjectURL(blob);urls[fi]=u;next[fi]=u;}
+      }
+      if(mounted) setPreviews(next);
+    })();
+    return()=>{mounted=false;Object.values(urls).forEach(u=>URL.revokeObjectURL(u));};
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[depsKey]);
+
+  const handleAdd=(e)=>{
+    const newFiles=Array.from(e.target.files);
+    if(!newFiles.length) return;
+    onChange([...files,...newFiles.map(f=>({name:f.name,_file:f}))]);
+    e.target.value="";
+  };
+
+  return(
+    <div style={{marginBottom:14}}>
+
+      {/* Label + share toggle */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+        <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,textTransform:"uppercase",display:"flex",alignItems:"center",gap:5}}>
+          {label}
+          {lockedByShared&&<span style={{background:C.green+"18",color:C.green,fontSize:10,fontWeight:700,borderRadius:99,padding:"1px 8px"}}>Shared</span>}
+        </div>
+        {showShareToggle&&(
+          <button onClick={onToggleShare} style={{display:"flex",alignItems:"center",gap:6,background:"transparent",border:"none",cursor:"pointer",padding:0,fontFamily:font}}>
+            <span style={{fontSize:12,color:isShared?C.green:C.sub,fontWeight:500}}>Apply to all items</span>
+            <div style={{width:36,height:20,borderRadius:99,background:isShared?C.green:C.bg3,border:`1.5px solid ${isShared?C.green:C.border}`,position:"relative",flexShrink:0}}>
+              <div style={{position:"absolute",top:2,left:isShared?16:2,width:14,height:14,borderRadius:99,background:C.white,transition:"left .2s"}}/>
+            </div>
+          </button>
+        )}
+      </div>
+
+      {/* Uploaded files list */}
+      {files.length>0&&(
+        <div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:6}}>
+          {files.map((f,fi)=>{
+            const isPdf=(f.name||"").toLowerCase().endsWith(".pdf");
+            return(
+              <div key={fi} style={{background:C.green+"08",border:`1px solid ${C.green}22`,borderRadius:8,padding:"8px 10px"}}>
+                {!isPdf&&previews[fi]&&<img src={previews[fi]} alt={f.name} style={{maxHeight:70,maxWidth:"100%",borderRadius:6,display:"block",marginBottom:5,objectFit:"contain"}}/>}
+                {isPdf&&<div style={{display:"inline-flex",alignItems:"center",gap:5,background:"#ff3b3018",border:"1px solid #ff3b3030",borderRadius:6,padding:"3px 8px",marginBottom:4}}><span style={{fontSize:14}}>📄</span><span style={{fontSize:11,color:C.red,fontWeight:600,maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.name}</span></div>}
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                  <span style={{fontSize:12,color:C.green,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"85%"}}>✓ {f.name}</span>
+                  {!lockedByShared&&<button onClick={()=>onChange(files.filter((_,j)=>j!==fi))} style={{background:"transparent",border:"none",cursor:"pointer",color:C.red,fontSize:18,lineHeight:1,padding:"0 2px",fontFamily:font}}>×</button>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Add file button */}
+      {!lockedByShared&&(
+        <label style={{display:"inline-flex",alignItems:"center",gap:6,background:C.bg2,border:`1.5px dashed ${C.border}`,borderRadius:8,padding:"7px 14px",cursor:"pointer",fontSize:13,color:C.sub,fontFamily:font,marginBottom:6}}>
+          <input type="file" style={{display:"none"}} onChange={handleAdd} multiple/>
+          ↑ {files.length>0?"Add Another File":"Upload File"}
+        </label>
+      )}
+
+      {/* Note field (for all brand file types) */}
+      <textarea
+        value={noteValue||""}
+        onChange={e=>onNoteChange(e.target.value)}
+        placeholder={`${label} notes… (optional)`}
+        rows={2}
+        style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 12px",fontFamily:font,fontSize:13,resize:"vertical",outline:"none",marginTop:4,marginBottom:2,display:"block"}}
+      />
+
+    </div>
+  );
+}
+
 // ── ItemCard ───────────────────────────────────────────────────────────────
 
 function ItemCard({it,idx,isAdmin,onDownload}) {
@@ -414,27 +514,33 @@ function ItemCard({it,idx,isAdmin,onDownload}) {
   const [previews,setPreviews]=useState({});
 
   useEffect(()=>{
-    let urls={};
+    let mounted=true;
+    const urls={};
     const load=async()=>{
       const next={};
       if(it.catalogImage?.key){
         const blob=await loadFileData(it.catalogImage.key);
-        if(blob){const u=URL.createObjectURL(blob);urls[it.catalogImage.key]=u;next["__catalog__"]=u;}
+        if(blob&&mounted){const u=URL.createObjectURL(blob);urls["__catalog__"]=u;next["__catalog__"]=u;}
       }
       if(it.brandingFiles){
         for(const [k,v] of Object.entries(it.brandingFiles)){
-          if(!v?.key) continue;
-          const name=v.name||"";
-          if(name.toLowerCase().endsWith(".pdf")) continue;
-          const blob=await loadFileData(v.key);
-          if(blob){const u=URL.createObjectURL(blob);urls[v.key]=u;next[k]=u;}
+          const files=Array.isArray(v)?v:(v?[v]:[]);
+          for(let fi=0;fi<files.length;fi++){
+            const f=files[fi];
+            if(!f?.key) continue;
+            const name=f.name||"";
+            if(name.toLowerCase().endsWith(".pdf")) continue;
+            const blob=await loadFileData(f.key);
+            if(blob&&mounted){const u=URL.createObjectURL(blob);const pk=`${k}_${fi}`;urls[pk]=u;next[pk]=u;}
+          }
         }
       }
-      setPreviews(next);
+      if(mounted) setPreviews(next);
     };
     load();
-    return ()=>{ Object.values(urls).forEach(u=>URL.revokeObjectURL(u)); };
-  },[it.catalogImage?.key, it.brandingFiles]);
+    return ()=>{mounted=false;Object.values(urls).forEach(u=>URL.revokeObjectURL(u));};
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[it.catalogImage?.key, JSON.stringify(Object.entries(it.brandingFiles||{}).map(([k,v])=>[k,Array.isArray(v)?v.map(f=>f.key):v?.key]))]);
 
   return (
 
@@ -472,7 +578,7 @@ function ItemCard({it,idx,isAdmin,onDownload}) {
     {it.logos?.length>0&&<div style={{fontSize:12,color:C.sub,marginBottom:it.logoNote?2:8}}>Logos: {it.logos.join(", ")}</div>}
     {it.logoNote&&<div style={{fontSize:12,color:C.sub,marginBottom:8,fontStyle:"italic"}}>Placement: {it.logoNote}</div>}
 
-    {it.brandingFiles&&Object.entries(it.brandingFiles).some(([,v])=>v)&&(
+    {it.brandingFiles&&Object.entries(it.brandingFiles).some(([,v])=>(Array.isArray(v)?v:v?[v]:[]).length>0)&&(
 
       <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`}}>
 
@@ -480,25 +586,36 @@ function ItemCard({it,idx,isAdmin,onDownload}) {
 
         <div style={{display:"flex",flexDirection:"column",gap:6}}>
 
-          {Object.entries(it.brandingFiles).filter(([,v])=>v).map(([k,v])=>{
-            const isPdf=(v.name||"").toLowerCase().endsWith(".pdf");
-            return (
-            <div key={k} style={{background:C.green+"08",border:`1px solid ${C.green}22`,borderRadius:8,padding:"8px 12px"}}>
-              {isPdf
-                ? <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"#ff3b3018",border:"1px solid #ff3b3030",borderRadius:7,padding:"4px 10px",marginBottom:6}}>
-                    <span style={{fontSize:16}}>📄</span>
-                    <span style={{fontSize:11,color:C.red,fontWeight:600}}>{v.name}</span>
-                  </div>
-                : previews[k]
-                  ? <img src={previews[k]} alt={v.name} style={{maxHeight:80,maxWidth:"100%",borderRadius:7,display:"block",marginBottom:6,objectFit:"contain"}}/>
-                  : null}
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                <span style={{fontSize:12,color:C.green,fontWeight:600}}>✓ {k}: {v.name}</span>
-                {isAdmin&&v.key&&<button onClick={()=>onDownload(v.key,v.name)} style={{background:C.text,color:C.white,border:"none",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:font,fontWeight:600}}>Download</button>}
+          {Object.entries(it.brandingFiles).map(([k,v])=>{
+            const files=Array.isArray(v)?v:(v?[v]:[]);
+            if(!files.length) return null;
+            return(
+              <div key={k} style={{background:C.green+"08",border:`1px solid ${C.green}22`,borderRadius:8,padding:"8px 12px"}}>
+                <div style={{fontSize:11,color:C.sub,fontWeight:700,textTransform:"uppercase",letterSpacing:.3,marginBottom:6}}>{k}</div>
+                {files.map((f,fi)=>{
+                  const isPdf=(f.name||"").toLowerCase().endsWith(".pdf");
+                  const pk=`${k}_${fi}`;
+                  return(
+                    <div key={fi} style={{marginBottom:fi<files.length-1?6:0}}>
+                      {isPdf
+                        ?<div style={{display:"inline-flex",alignItems:"center",gap:6,background:"#ff3b3018",border:"1px solid #ff3b3030",borderRadius:7,padding:"4px 10px",marginBottom:4}}>
+                            <span style={{fontSize:14}}>📄</span>
+                            <span style={{fontSize:11,color:C.red,fontWeight:600}}>{f.name}</span>
+                          </div>
+                        :previews[pk]
+                          ?<img src={previews[pk]} alt={f.name} style={{maxHeight:80,maxWidth:"100%",borderRadius:7,display:"block",marginBottom:4,objectFit:"contain"}}/>
+                          :null}
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                        <span style={{fontSize:12,color:C.green,fontWeight:600}}>✓ {f.name}</span>
+                        {isAdmin&&f.key&&<button onClick={()=>onDownload(f.key,f.name)} style={{background:C.text,color:C.white,border:"none",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:font,fontWeight:600}}>Download</button>}
+                      </div>
+                    </div>
+                  );
+                })}
+                {it.brandingFileNotes?.[k]&&<div style={{fontSize:12,color:C.sub,marginTop:5,fontStyle:"italic"}}>{it.brandingFileNotes[k]}</div>}
               </div>
-              {it.brandingFileNotes?.[k]&&<div style={{fontSize:12,color:C.sub,marginTop:5,fontStyle:"italic"}}>{it.brandingFileNotes[k]}</div>}
-            </div>
-          );})}
+            );
+          })}
 
         </div>
 
@@ -600,7 +717,7 @@ function ProfileCard({profile,onSave}) {
 
 function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
-  const initItems = (initial?.items||[emptyItem()]).map(it=>({...emptyItem(),...it}));
+  const initItems = (initial?.items||[emptyItem()]).map(it=>({...emptyItem(),...it,brandingFiles:normBF(it.brandingFiles)}));
 
   const [items, setItems] = useState(initItems);
 
@@ -632,20 +749,17 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
   const toggleLogo   = useCallback((i,l)    => setItems(p=>p.map((it,j)=>{if(j!==i)return it;const logos=it.logos.includes(l)?it.logos.filter(x=>x!==l):[...it.logos,l];return{...it,logos};})),[]);
 
   const addItem      = useCallback(()=>{
-    const newIdx=items.length;
-    pendingFiles.current[newIdx]={};
     setItems(p=>{
       const newItem=emptyItem();
       const src=p[0];
       BRAND_FILES.forEach(fname=>{
-        if(sharedTogglesRef.current[fname]&&src?.brandingFiles?.[fname]){
-          newItem.brandingFiles[fname]=src.brandingFiles[fname];
-          if(pendingFiles.current[0]?.[fname]) pendingFiles.current[newIdx][fname]=pendingFiles.current[0][fname];
+        if(sharedTogglesRef.current[fname]&&src?.brandingFiles?.[fname]?.length){
+          newItem.brandingFiles[fname]=[...src.brandingFiles[fname]];
         }
       });
       return [...p,newItem];
     });
-  },[items.length]);
+  },[]);
 
   const removeItem   = useCallback(i=>{
 
@@ -691,22 +805,23 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
       }
 
-      const brandingFiles = {...(it.brandingFiles||{})};
+      const brandingFiles = {};
 
       for(const fname of BRAND_FILES) {
-
-        if(pending[fname]) {
-
-          const key = fileKey(oid, i, fname);
-
-          if(isCloud){await supabase.storage.from("crm-files").upload(key,pending[fname],{upsert:true});}
-
-          else{await fileDb.set(key, pending[fname]);}
-
-          brandingFiles[fname] = { name: pending[fname].name, key };
-
+        const fileList = it.brandingFiles?.[fname] || [];
+        const saved = [];
+        let pendingIdx = 0;
+        for(const f of fileList) {
+          if(f._file) {
+            const key = `${fileKey(oid, i, fname)}_${Date.now()}_${pendingIdx++}`;
+            if(isCloud){await supabase.storage.from("crm-files").upload(key,f._file,{upsert:true});}
+            else{await fileDb.set(key, f._file);}
+            saved.push({name:f.name, key});
+          } else if(f.key) {
+            saved.push({name:f.name, key:f.key});
+          }
         }
-
+        brandingFiles[fname] = saved;
       }
 
       return {...it, catalogImage, brandingFiles};
@@ -720,7 +835,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
     const propagated = finalItems.map((it,i)=>{
       if(i===0) return it;
       const bf={...it.brandingFiles};
-      BRAND_FILES.forEach(fname=>{ if(sharedToggles[fname]&&item0BF[fname]) bf[fname]=item0BF[fname]; });
+      BRAND_FILES.forEach(fname=>{ if(sharedToggles[fname]&&item0BF[fname]?.length) bf[fname]=item0BF[fname]; });
       return {...it,brandingFiles:bf};
     });
 
@@ -849,46 +964,28 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
               {BRAND_FILES.map(fname=>{
 
                 const isShared = sharedToggles[fname];
+                const lockedByShared = i>0&&isShared;
+                const displayFiles = lockedByShared ? (items[0]?.brandingFiles?.[fname]||[]) : (it.brandingFiles?.[fname]||[]);
 
                 return(
-
-                  <React.Fragment key={`${i}-${fname}`}>
-
-                  <UploadSlot
-
-                    label={fname} required={true}
-
-                    initial={it.brandingFiles?.[fname]||null}
-
-                    showShareToggle={i===0}
-
-                    isShared={isShared}
-
-                    onToggleShare={()=>setSharedToggles(p=>({...p,[fname]:!p[fname]}))}
-
-                    lockedByShared={i>0&&isShared}
-
-                    onReady={f=>{
-                      queueFile(i,fname,f);
-                      if(i===0&&isShared){
-                        items.forEach((_,j)=>{ if(j!==0) queueFile(j,fname,f); });
-                      }
+                  <MultiBrandingSlot
+                    key={`${i}-${fname}`}
+                    label={fname}
+                    files={displayFiles}
+                    onChange={fileArr=>{
+                      setItems(prev=>prev.map((it2,j)=>{
+                        if(j===i) return {...it2,brandingFiles:{...it2.brandingFiles,[fname]:fileArr}};
+                        if(i===0&&isShared) return {...it2,brandingFiles:{...it2.brandingFiles,[fname]:fileArr}};
+                        return it2;
+                      }));
                     }}
-
+                    showShareToggle={i===0}
+                    isShared={isShared}
+                    onToggleShare={()=>setSharedToggles(p=>({...p,[fname]:!p[fname]}))}
+                    lockedByShared={lockedByShared}
+                    noteValue={it.brandingFileNotes?.[fname]||""}
+                    onNoteChange={v=>setItemField(i,"brandingFileNotes",{...it.brandingFileNotes,[fname]:v})}
                   />
-
-                  {BRAND_FILE_HAS_NOTE[fname]&&(
-                    <textarea
-                      value={it.brandingFileNotes?.[fname]||""}
-                      onChange={e=>setItemField(i,"brandingFileNotes",{...it.brandingFileNotes,[fname]:e.target.value})}
-                      placeholder={`${fname} placement / print details…`}
-                      rows={2}
-                      style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 12px",fontFamily:font,fontSize:13,resize:"vertical",outline:"none",marginTop:-6,marginBottom:12}}
-                    />
-                  )}
-
-                  </React.Fragment>
-
                 );
 
               })}
