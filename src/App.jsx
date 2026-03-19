@@ -968,10 +968,25 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
 // ── Customer Card (admin) ───────────────────────────────────────────────────
 
-function CustomerCard({username,u,prof,meta,userOrders,onToggleStar,onSaveNote,onDelete}){
+function CustomerCard({username,u,prof,meta,userOrders,onToggleStar,onSaveNote,onDelete,onResetPassword}){
   const [noteVal,setNoteVal]=useState(meta.adminNote||"");
+  const [showReset,setShowReset]=useState(false);
+  const [newPw,setNewPw]=useState("");
   return(
     <div style={{background:C.bg,border:`1px solid ${meta.starred?C.amber:C.border}`,borderRadius:16,padding:20,boxShadow:meta.starred?"0 0 0 1px "+C.amber+"40":"none"}}>
+      {showReset&&(
+        <div style={{position:"fixed",inset:0,background:"#0008",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:24}} onClick={()=>{setShowReset(false);setNewPw("");}}>
+          <div style={{background:C.bg,borderRadius:18,padding:28,width:"100%",maxWidth:340,boxShadow:"0 8px 40px #0004"}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontSize:17,fontWeight:700,color:C.text,marginBottom:6}}>Reset Password</div>
+            <div style={{fontSize:13,color:C.sub,marginBottom:16}}>Set a new password for <strong>{u.name}</strong></div>
+            <input value={newPw} onChange={e=>setNewPw(e.target.value)} placeholder="New password" style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"10px 14px",fontFamily:font,fontSize:14,outline:"none",marginBottom:14}}/>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>{setShowReset(false);setNewPw("");}} style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,cursor:"pointer",color:C.sub}}>Cancel</button>
+              <button onClick={()=>{if(newPw.length>=4){onResetPassword(username,newPw);setShowReset(false);setNewPw("");}}} style={{flex:1,background:C.text,color:C.white,border:"none",borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,fontWeight:600,cursor:"pointer"}}>Reset</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
         <div>
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
@@ -982,6 +997,7 @@ function CustomerCard({username,u,prof,meta,userOrders,onToggleStar,onSaveNote,o
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <button onClick={()=>onToggleStar(username)} style={{background:meta.starred?C.amber+"20":"transparent",border:`1px solid ${meta.starred?C.amber:C.border}`,borderRadius:8,padding:"6px 12px",cursor:"pointer",fontSize:14,fontFamily:font,color:meta.starred?C.amber:C.sub}}>{meta.starred?"★ Starred":"☆ Star"}</button>
+          <button onClick={()=>setShowReset(true)} style={{background:"transparent",color:C.sub,border:`1px solid ${C.border}`,borderRadius:8,padding:"6px 12px",fontSize:13,cursor:"pointer",fontFamily:font}}>🔑 Reset PW</button>
           <button onClick={()=>onDelete(username)} style={{background:"transparent",color:C.red,border:`1px solid ${C.red}30`,borderRadius:8,padding:"6px 12px",fontSize:13,cursor:"pointer",fontFamily:font}}>Delete</button>
         </div>
       </div>
@@ -1056,6 +1072,12 @@ export default function App() {
   const [adminPass,setAdminPass]=useState("");
 
   const [authErr,setAuthErr]=useState("");
+
+  const [showChangePw,setShowChangePw]=useState(false);
+  const [cpOld,setCpOld]=useState("");
+  const [cpNew,setCpNew]=useState("");
+  const [cpConfirm,setCpConfirm]=useState("");
+  const [cpErr,setCpErr]=useState("");
 
   const dragIdx=useRef(null);
 
@@ -1253,6 +1275,27 @@ export default function App() {
 
   const logout=()=>{localStorage.removeItem("crm-session");setPortal("home");setCurrentUser(null);setView("list");setAuthName("");setAuthUser("");setAuthPass("");setAuthErr("");};
 
+  const handleChangePassword=async()=>{
+    setCpErr("");
+    const u=users[currentUser.username];
+    if(!u){setCpErr("User not found.");return;}
+    if(u.pass!==cpOld){setCpErr("Current password is incorrect.");return;}
+    if(cpNew.length<4){setCpErr("New password must be at least 4 characters.");return;}
+    if(cpNew!==cpConfirm){setCpErr("New passwords do not match.");return;}
+    const updated={...users,[currentUser.username]:{...u,pass:cpNew}};
+    await saveUsers(updated);
+    setCpOld("");setCpNew("");setCpConfirm("");setCpErr("");setShowChangePw(false);
+    toast("Password updated successfully!");
+  };
+
+  const handleAdminResetPassword=async(username,newPass)=>{
+    const u=users[username];
+    if(!u) return;
+    const updated={...users,[username]:{...u,pass:newPass}};
+    await saveUsers(updated);
+    toast(`Password reset for ${u.name}.`);
+  };
+
   useEffect(()=>{
     if(portal!=="home"&&currentUser){
       try{
@@ -1378,6 +1421,14 @@ export default function App() {
 
           </div>
 
+          {authMode==="login"&&<div style={{textAlign:"right",marginTop:6}}>
+            <button onClick={()=>setAuthMode("forgot")} style={{background:"none",border:"none",color:C.sub,fontSize:12,cursor:"pointer",fontFamily:font,padding:0}}>Forgot password?</button>
+          </div>}
+
+          {authMode==="forgot"&&<div style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:"12px 14px",marginTop:8,fontSize:13,color:C.sub,lineHeight:1.5}}>
+            Please contact the admin to reset your password. The admin can reset it from the admin panel.
+          </div>}
+
           {authErr&&!authErr.includes("admin")&&<div style={{color:C.red,fontSize:13,marginTop:10}}>{authErr}</div>}
 
           <PrimaryBtn onClick={authMode==="login"?handleLogin:handleRegister} style={{width:"100%",marginTop:14,padding:"12px"}}>{authMode==="login"?"Sign In":"Create Account"}</PrimaryBtn>
@@ -1434,11 +1485,32 @@ export default function App() {
 
       <div style={{background:C.bg,minHeight:"100vh",fontFamily:font}}>
 
+        {/* Change Password Modal */}
+        {showChangePw&&(
+          <div style={{position:"fixed",inset:0,background:"#0008",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:24}} onClick={()=>{setShowChangePw(false);setCpErr("");}}>
+            <div style={{background:C.bg,borderRadius:18,padding:28,width:"100%",maxWidth:380,boxShadow:"0 8px 40px #0004"}} onClick={e=>e.stopPropagation()}>
+              <div style={{fontSize:18,fontWeight:700,color:C.text,marginBottom:20}}>Change Password</div>
+              <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                <Inp value={cpOld} onChange={setCpOld} placeholder="Current password" type="password"/>
+                <Inp value={cpNew} onChange={setCpNew} placeholder="New password"/>
+                <Inp value={cpConfirm} onChange={setCpConfirm} placeholder="Confirm new password" type="password"/>
+              </div>
+              {cpErr&&<div style={{color:C.red,fontSize:13,marginTop:10}}>{cpErr}</div>}
+              <div style={{display:"flex",gap:10,marginTop:18}}>
+                <GhostBtn onClick={()=>{setShowChangePw(false);setCpErr("");}} style={{flex:1}}>Cancel</GhostBtn>
+                <PrimaryBtn onClick={handleChangePassword} style={{flex:1}}>Save Password</PrimaryBtn>
+              </div>
+            </div>
+          </div>
+        )}
+
         <Nav title="My Orders" sub={currentUser.name} right={<>
 
           {view==="list"&&<PrimaryBtn onClick={()=>setView("new")} style={{padding:"8px 18px",fontSize:14}}>+ New Order</PrimaryBtn>}
 
           {view!=="list"&&<GhostBtn onClick={()=>setView("list")} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>← Back</GhostBtn>}
+
+          <GhostBtn onClick={()=>{setShowChangePw(true);setCpOld("");setCpNew("");setCpConfirm("");setCpErr("");}} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>🔑</GhostBtn>
 
           <GhostBtn onClick={logout} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>Sign Out</GhostBtn>
 
@@ -1643,7 +1715,8 @@ export default function App() {
                   userOrders={orders.filter(o=>o.owner===username)}
                   onToggleStar={handleToggleStar}
                   onSaveNote={handleSaveAdminNote}
-                  onDelete={setDeleteUserTarget}/>
+                  onDelete={setDeleteUserTarget}
+                  onResetPassword={handleAdminResetPassword}/>
               ))}
             </div>
           </>);
