@@ -335,7 +335,7 @@ function CatalogSlot({initial, onReady}) {
 
       <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:6,textTransform:"uppercase"}}>
 
-        Item Catalog Image <span style={{color:C.sub,fontWeight:400,textTransform:"none",letterSpacing:0,fontSize:12}}>(screenshot from catalog)</span>
+        Item Catalog Image <span style={{color:C.sub,fontWeight:400,textTransform:"none",letterSpacing:0,fontSize:12}}>(screenshot from catalog — make sure the SKU code is visible in the image)</span>
 
       </div>
 
@@ -349,7 +349,7 @@ function CatalogSlot({initial, onReady}) {
             ? <><img src={previewUrl} alt="preview" style={{maxHeight:120,maxWidth:"100%",borderRadius:8,marginBottom:6,objectFit:"contain"}}/><div style={{fontSize:11,color:C.green,fontWeight:600}}>{fileName}</div><div style={{fontSize:10,color:C.sub,marginTop:2}}>Tap to replace</div></>
             : fileName
               ? <><div style={{fontSize:22,marginBottom:6}}>✅</div><div style={{fontSize:13,color:C.green,fontWeight:600}}>{fileName}</div><div style={{fontSize:11,color:C.sub,marginTop:4}}>Tap to replace</div></>
-              : <><div style={{fontSize:22,marginBottom:6}}>🖼</div><div style={{fontSize:13,color:C.sub,fontWeight:500}}>Tap to upload catalog screenshot</div><div style={{fontSize:11,color:C.gray,marginTop:3}}>Any image format</div></>}
+              : <><div style={{fontSize:22,marginBottom:6}}>🖼</div><div style={{fontSize:13,color:C.sub,fontWeight:500}}>Tap to upload catalog screenshot</div><div style={{fontSize:11,color:C.gray,marginTop:3}}>Include the SKU code in the screenshot</div></>}
 
         </div>
 
@@ -728,9 +728,9 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
               <div>
 
-                <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:6,textTransform:"uppercase"}}>Model / Style Name <span style={{color:C.red}}>*</span></div>
+                <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:6,textTransform:"uppercase"}}>Model / SKU <span style={{color:C.red}}>*</span></div>
 
-                <Inp value={it.style} onChange={v=>setItemField(i,"style",v)} placeholder="e.g. Polo Classic #PC-200"/>
+                <Inp value={it.style} onChange={v=>setItemField(i,"style",v)} placeholder="e.g. LAC2002-1"/>
 
               </div>
 
