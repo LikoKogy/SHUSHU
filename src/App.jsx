@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import "./App.css";
 import { supabase, isCloud } from "./supabase.js";
 
