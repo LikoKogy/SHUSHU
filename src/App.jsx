@@ -839,23 +839,35 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
                     lockedByShared={i>0&&isShared}
 
-                    isDefault={defaultBrandingFiles[fname]?.itemIdx===i||(defaultBrandingFiles[fname]?.key!=null&&defaultBrandingFiles[fname]?.key===it.brandingFiles?.[fname]?.key)}
+                    isDefault={(()=>{
+                      const def=defaultBrandingFiles[fname];
+                      if(!def) return false;
+                      if(def.key!=null) return def.key===(it.brandingFiles?.[fname]?.key||null);
+                      // fresh file: match by File object reference
+                      const pending=pendingFiles.current[i]?.[fname];
+                      return pending!=null&&defaultBrandingFilesQueue.current[fname]===pending;
+                    })()}
 
                     onToggleDefault={(liveFile)=>{
-                      if(defaultBrandingFiles[fname]?.itemIdx===i){
+                      const def=defaultBrandingFiles[fname];
+                      const currentFile=liveFile||pendingFiles.current[i]?.[fname];
+                      const currentKey=it.brandingFiles?.[fname]?.key||null;
+                      const thisIsDefault=def&&(
+                        (def.key!=null&&def.key===currentKey)||
+                        (def.key===null&&defaultBrandingFilesQueue.current[fname]!=null&&defaultBrandingFilesQueue.current[fname]===currentFile)
+                      );
+                      if(thisIsDefault){
                         const next={...defaultBrandingFiles,[fname]:null};
                         setDefaultBrandingFiles(next);
                         defaultBrandingFilesQueue.current[fname]=undefined;
                         localStorage.setItem('shushu_brand_defaults',JSON.stringify(next));
                       } else {
-                        const file=liveFile||pendingFiles.current[i]?.[fname];
-                        const savedKey=it.brandingFiles?.[fname]?.key||null;
-                        const name=file?.name||it.brandingFiles?.[fname]?.name||null;
+                        const name=currentFile?.name||it.brandingFiles?.[fname]?.name||null;
                         if(name){
-                          const entry={name,key:savedKey,itemIdx:i};
+                          const entry={name,key:currentKey,itemIdx:i};
                           const next={...defaultBrandingFiles,[fname]:entry};
                           setDefaultBrandingFiles(next);
-                          if(file) defaultBrandingFilesQueue.current[fname]=file;
+                          if(currentFile) defaultBrandingFilesQueue.current[fname]=currentFile;
                           localStorage.setItem('shushu_brand_defaults',JSON.stringify(next));
                         }
                       }
@@ -871,7 +883,9 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
                       }
 
-                      if(defaultBrandingFiles[fname]?.itemIdx===i){
+                      // if this slot's file is currently the default, update default to new file
+                      const def=defaultBrandingFiles[fname];
+                      if(def&&def.key===null&&defaultBrandingFilesQueue.current[fname]===pendingFiles.current[i]?.[fname]){
                         const entry={name:f.name,key:null,itemIdx:i};
                         const next={...defaultBrandingFiles,[fname]:entry};
                         setDefaultBrandingFiles(next);
