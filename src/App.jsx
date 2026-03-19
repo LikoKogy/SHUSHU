@@ -20,7 +20,8 @@ const SIZES = ["XS","S","M","L","XL","2XL","3XL"];
 
 const LOGO_PLACEMENTS = ["Front Left Chest","Front Center","Back Center","Back Neck","Left Sleeve","Right Sleeve","Bottom Hem"];
 
-const BRAND_FILES = ["Logo Design","Neck Label","Washing / Care Label","Hang Tag","Packaging / Bag"];
+const BRAND_FILES = ["Logo Design","Neck Label","Washing / Care Label","Hang Tag","Packaging / Bag","Front Print","Back Print"];
+const BRAND_FILE_HAS_NOTE = {"Front Print":true,"Back Print":true};
 
 const STATUS = { Active:C.green, Pending:C.amber, Draft:C.gray, Archived:C.purple };
 
@@ -28,7 +29,7 @@ const ADMIN_PASS = "qwqw";
 
 const totalUnits = items => items.reduce((s,it)=>s+SIZES.reduce((a,sz)=>a+(parseInt(it.sizes[sz])||0),0),0);
 
-const emptyItem  = () => ({ style:"", colors:"", sizes:Object.fromEntries(SIZES.map(s=>[s,0])), logos:[], logoNote:"", catalogImage:null, brandingFiles:Object.fromEntries(BRAND_FILES.map(k=>[k,null])), itemNotes:"" });
+const emptyItem  = () => ({ style:"", colors:"", sizes:Object.fromEntries(SIZES.map(s=>[s,0])), logos:[], logoNote:"", catalogImage:null, brandingFiles:Object.fromEntries(BRAND_FILES.map(k=>[k,null])), brandingFileNotes:{}, itemNotes:"" });
 
 const emptyForm  = () => ({ notes:"", items:[emptyItem()] });
 
@@ -449,6 +450,7 @@ function ItemCard({it,idx,isAdmin,onDownload}) {
                 <span style={{fontSize:12,color:C.green,fontWeight:600}}>✓ {k}: {v.name}</span>
                 {isAdmin&&v.key&&<button onClick={()=>onDownload(v.key,v.name)} style={{background:C.text,color:C.white,border:"none",borderRadius:6,padding:"3px 10px",fontSize:11,cursor:"pointer",fontFamily:font,fontWeight:600}}>Download</button>}
               </div>
+              {it.brandingFileNotes?.[k]&&<div style={{fontSize:12,color:C.sub,marginTop:5,fontStyle:"italic"}}>{it.brandingFileNotes[k]}</div>}
             </div>
           );})}
 
@@ -828,6 +830,17 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
                     }}
 
                   />
+
+                  {BRAND_FILE_HAS_NOTE[fname]&&(
+                    <textarea
+                      key={`${i}-${fname}-note`}
+                      value={it.brandingFileNotes?.[fname]||""}
+                      onChange={e=>setItemField(i,"brandingFileNotes",{...it.brandingFileNotes,[fname]:e.target.value})}
+                      placeholder={`${fname} placement / print details…`}
+                      rows={2}
+                      style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 12px",fontFamily:font,fontSize:13,resize:"vertical",outline:"none",marginTop:-6,marginBottom:12}}
+                    />
+                  )}
 
                 );
 
