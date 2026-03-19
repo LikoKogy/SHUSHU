@@ -349,7 +349,34 @@ function CatalogSlot({initial, onReady}) {
             ? <><img src={previewUrl} alt="preview" style={{maxHeight:120,maxWidth:"100%",borderRadius:8,marginBottom:6,objectFit:"contain"}}/><div style={{fontSize:11,color:C.green,fontWeight:600}}>{fileName}</div><div style={{fontSize:10,color:C.sub,marginTop:2}}>Tap to replace</div></>
             : fileName
               ? <><div style={{fontSize:22,marginBottom:6}}>✅</div><div style={{fontSize:13,color:C.green,fontWeight:600}}>{fileName}</div><div style={{fontSize:11,color:C.sub,marginTop:4}}>Tap to replace</div></>
-              : <><div style={{fontSize:22,marginBottom:6}}>🖼</div><div style={{fontSize:13,color:C.sub,fontWeight:500}}>Tap to upload catalog screenshot</div><div style={{fontSize:11,color:C.gray,marginTop:3}}>Include the SKU code in the screenshot</div></>}
+              : <div style={{position:"relative",display:"inline-block",width:"100%"}}>
+                  {/* Example catalog screenshot watermark */}
+                  <svg viewBox="0 0 200 240" width="130" height="156" style={{opacity:0.18,display:"block",margin:"0 auto 8px"}} xmlns="http://www.w3.org/2000/svg">
+                    {/* Green border frame */}
+                    <rect x="0" y="0" width="200" height="240" rx="6" fill="#22c55e"/>
+                    {/* White photo area */}
+                    <rect x="8" y="8" width="184" height="185" rx="4" fill="#f5f5f5"/>
+                    {/* Simple garment silhouette — bodysuit shape */}
+                    <g fill="#888">
+                      {/* shoulders/straps */}
+                      <rect x="80" y="30" width="8" height="40" rx="4"/>
+                      <rect x="112" y="30" width="8" height="40" rx="4"/>
+                      {/* neck */}
+                      <ellipse cx="100" cy="28" rx="12" ry="8" fill="#bbb"/>
+                      {/* torso */}
+                      <path d="M72 68 Q100 60 128 68 L132 140 Q100 148 68 140 Z" fill="#999"/>
+                      {/* skirt/shorts */}
+                      <path d="M68 138 Q100 148 132 138 L136 175 Q100 182 64 175 Z" fill="#888"/>
+                    </g>
+                    {/* Green SKU banner */}
+                    <rect x="0" y="193" width="200" height="47" rx="0" fill="#22c55e"/>
+                    <rect x="0" y="193" width="200" height="4" fill="#16a34a"/>
+                    {/* SKU text */}
+                    <text x="100" y="222" textAnchor="middle" fill="white" fontSize="18" fontWeight="bold" fontFamily="monospace">LAC2018-4</text>
+                  </svg>
+                  <div style={{fontSize:13,color:C.sub,fontWeight:500}}>Tap to upload catalog screenshot</div>
+                  <div style={{fontSize:11,color:C.gray,marginTop:3}}>Include the SKU code in the screenshot</div>
+                </div>}
 
         </div>
 
