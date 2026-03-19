@@ -1918,7 +1918,7 @@ export default function App() {
 
               <div style={{display:"flex",gap:10,marginTop:10,flexWrap:"wrap"}}>
 
-                <button onClick={()=>downloadExcel(o)} style={{background:"#e8f5e9",color:"#2e7d32",border:"1px solid #a5d6a7",borderRadius:10,padding:"11px 18px",cursor:"pointer",fontFamily:font,fontSize:14,fontWeight:600}}>⬇ Export Excel</button>
+                <button onClick={async()=>downloadExcel(o)} style={{background:"#e8f5e9",color:"#2e7d32",border:"1px solid #a5d6a7",borderRadius:10,padding:"11px 18px",cursor:"pointer",fontFamily:font,fontSize:14,fontWeight:600}}>⬇ Export Excel</button>
 
                 <button disabled={zipLoading} onClick={async()=>{setZipLoading(true);try{await downloadZip(o,loadFileData,(done,total)=>{});}finally{setZipLoading(false);}}} style={{background:zipLoading?"#e0e0e0":"#e3f2fd",color:zipLoading?C.gray:"#1565c0",border:`1px solid ${zipLoading?"#bdbdbd":"#90caf9"}`,borderRadius:10,padding:"11px 18px",cursor:zipLoading?"not-allowed":"pointer",fontFamily:font,fontSize:14,fontWeight:600}}>{zipLoading?"Preparing ZIP…":"⬇ Download ZIP"}</button>
 
