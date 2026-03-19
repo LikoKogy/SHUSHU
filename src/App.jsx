@@ -1598,17 +1598,17 @@ export default function App() {
 
           </div>
 
-          <div className="filter-bar" style={{background:C.bg,borderRadius:16,padding:"16px 20px",marginBottom:20,display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",border:`1px solid ${C.border}`}}>
+          <div className="filter-bar" style={{background:C.bg,borderRadius:16,padding:"16px 20px",marginBottom:20,display:"flex",flexDirection:"column",gap:12,border:`1px solid ${C.border}`}}>
 
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search orders…" style={{background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 14px",fontFamily:font,fontSize:14,flex:1,minWidth:160,outline:"none"}}/>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search orders…" style={{background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 14px",fontFamily:font,fontSize:14,width:"100%",boxSizing:"border-box",outline:"none"}}/>
 
-            <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={{background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 12px",fontFamily:font,fontSize:14}}>
+            <select value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} style={{background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 12px",fontFamily:font,fontSize:14,width:"100%",boxSizing:"border-box"}}>
 
               {["All","Active","Pending","Draft"].map(s=><option key={s}>{s}</option>)}
 
             </select>
 
-            <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 12px",fontFamily:font,fontSize:14}}>
+            <select value={sortBy} onChange={e=>setSortBy(e.target.value)} style={{background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 12px",fontFamily:font,fontSize:14,width:"100%",boxSizing:"border-box"}}>
 
               {["Newest","Oldest","Company A-Z","Most Units"].map(s=><option key={s}>{s}</option>)}
 
