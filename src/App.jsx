@@ -806,9 +806,9 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
                 return(
 
-                  <UploadSlot
+                  <React.Fragment key={`${i}-${fname}`}>
 
-                    key={`${i}-${fname}`}
+                  <UploadSlot
 
                     label={fname} required={true}
 
@@ -833,7 +833,6 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
                   {BRAND_FILE_HAS_NOTE[fname]&&(
                     <textarea
-                      key={`${i}-${fname}-note`}
                       value={it.brandingFileNotes?.[fname]||""}
                       onChange={e=>setItemField(i,"brandingFileNotes",{...it.brandingFileNotes,[fname]:e.target.value})}
                       placeholder={`${fname} placement / print details…`}
@@ -841,6 +840,8 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
                       style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 12px",fontFamily:font,fontSize:13,resize:"vertical",outline:"none",marginTop:-6,marginBottom:12}}
                     />
                   )}
+
+                  </React.Fragment>
 
                 );
 
