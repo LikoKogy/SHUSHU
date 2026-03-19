@@ -145,11 +145,29 @@ const GhostBtn = ({children,onClick,style={}}) => <button onClick={onClick} styl
 
 const DestructBtn = ({children,onClick,style={}}) => <button onClick={onClick} style={{background:"transparent",color:C.red,border:`1px solid ${C.red}30`,borderRadius:10,padding:"9px 18px",fontFamily:font,fontSize:14,cursor:"pointer",...style}}>{children}</button>;
 
-const Toast = ({toasts}) => (
+const TOAST_CFG = {
+  success: { bg:"#22c55e", icon:"✓" },
+  warn:    { bg:"#f97316", icon:"⚠" },
+  error:   { bg:"#ef4444", icon:"✕" },
+};
 
-  <div style={{position:"fixed",bottom:28,left:"50%",transform:"translateX(-50%)",zIndex:9999,display:"flex",flexDirection:"column",gap:8,alignItems:"center",pointerEvents:"none"}}>
+const Toast = ({toasts, onDismiss}) => (
 
-    {toasts.map(t=><div key={t.id} style={{background:t.type==="warn"?"#ff9f0a":"#1d1d1f",color:C.white,padding:"11px 22px",borderRadius:22,fontSize:14,fontFamily:font,fontWeight:500,boxShadow:"0 4px 24px #0002"}}>{t.msg}</div>)}
+  <div style={{position:"fixed",top:24,left:"50%",transform:"translateX(-50%)",zIndex:9999,display:"flex",flexDirection:"column",gap:8,alignItems:"center",pointerEvents:"none"}}>
+
+    {toasts.map(t=>{
+      const cfg = TOAST_CFG[t.type] || TOAST_CFG.success;
+      return (
+        <div key={t.id} className={`toast-item${t.exiting?" exiting":""}`}
+          onClick={()=>onDismiss(t.id)}
+          style={{background:cfg.bg,color:"#fff",padding:"12px 18px 14px 14px",borderRadius:16,fontSize:14,fontFamily:font,fontWeight:500,boxShadow:"0 6px 28px #0003",display:"flex",alignItems:"center",gap:10,pointerEvents:"all",cursor:"pointer",minWidth:220,maxWidth:340,position:"relative",overflow:"hidden",userSelect:"none"}}>
+          <span style={{width:22,height:22,borderRadius:99,background:"#ffffff30",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:800,flexShrink:0}}>{cfg.icon}</span>
+          <span style={{flex:1,lineHeight:1.4}}>{t.msg}</span>
+          <span style={{fontSize:14,opacity:.6,marginLeft:4,flexShrink:0}}>✕</span>
+          <div style={{position:"absolute",bottom:0,left:0,height:3,background:"#ffffff40",animation:"toastProgress 3s linear forwards"}}/>
+        </div>
+      );
+    })}
 
   </div>
 
@@ -1083,12 +1101,18 @@ export default function App() {
 
   const dragOver=useRef(null);
 
+  const dismissToast=useCallback(id=>{
+    setToasts(p=>p.map(t=>t.id===id?{...t,exiting:true}:t));
+    setTimeout(()=>setToasts(p=>p.filter(t=>t.id!==id)),300);
+  },[]);
+
   const toast=useCallback((msg,type="success")=>{
-
-    const id=Date.now(); setToasts(p=>[...p,{id,msg,type}]);
-
-    setTimeout(()=>setToasts(p=>p.filter(t=>t.id!==id)),3000);
-
+    const id=Date.now();
+    setToasts(p=>[...p,{id,msg,type,exiting:false}]);
+    setTimeout(()=>{
+      setToasts(p=>p.map(t=>t.id===id?{...t,exiting:true}:t));
+      setTimeout(()=>setToasts(p=>p.filter(t=>t.id!==id)),300);
+    },3000);
   },[]);
 
   useEffect(()=>{
@@ -1632,7 +1656,7 @@ export default function App() {
 
         {deleteTarget&&<Modal onClose={()=>setDeleteTarget(null)}><div style={{fontSize:18,fontWeight:700,marginBottom:8}}>Delete this order?</div><div style={{color:C.sub,fontSize:14,marginBottom:24}}>This will be permanently removed.</div><div style={{display:"flex",gap:10}}><GhostBtn onClick={()=>setDeleteTarget(null)} style={{flex:1,color:C.sub}}>Cancel</GhostBtn><button onClick={()=>handleDelete(deleteTarget.id)} style={{flex:1,background:C.red,color:C.white,border:"none",borderRadius:10,padding:"11px",cursor:"pointer",fontFamily:font,fontWeight:600,fontSize:15}}>Delete</button></div></Modal>}
 
-        <Toast toasts={toasts}/>
+        <Toast toasts={toasts} onDismiss={dismissToast}/>
 
       </div>
 
@@ -1894,7 +1918,7 @@ export default function App() {
 
       {deleteUserTarget&&<Modal onClose={()=>setDeleteUserTarget(null)}><div style={{fontSize:18,fontWeight:700,marginBottom:8}}>Delete customer?</div><div style={{color:C.sub,fontSize:14,marginBottom:24}}><strong>{users[deleteUserTarget]?.name}</strong> (@{deleteUserTarget}) and all their orders will be permanently removed.</div><div style={{display:"flex",gap:10}}><GhostBtn onClick={()=>setDeleteUserTarget(null)} style={{flex:1,color:C.sub}}>Cancel</GhostBtn><button onClick={()=>handleDeleteUser(deleteUserTarget)} style={{flex:1,background:C.red,color:C.white,border:"none",borderRadius:10,padding:"11px",cursor:"pointer",fontFamily:font,fontWeight:600,fontSize:15}}>Delete</button></div></Modal>}
 
-      <Toast toasts={toasts}/>
+      <Toast toasts={toasts} onDismiss={dismissToast}/>
 
     </div>
 
