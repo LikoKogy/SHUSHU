@@ -199,7 +199,7 @@ function FilePreview({file, url}) {
   return <img src={url} alt="preview" style={{maxHeight:80,maxWidth:"100%",borderRadius:7,marginBottom:6,objectFit:"contain",display:"block"}}/>;
 }
 
-function UploadSlot({label, required, initial, onReady, showShareToggle, isShared, onToggleShare, lockedByShared, isDefault, onToggleDefault}) {
+function UploadSlot({label, required, initial, onReady, showShareToggle, isShared, onToggleShare, lockedByShared}) {
 
   const [fileName, setFileName] = useState(initial?.name||null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -288,15 +288,6 @@ function UploadSlot({label, required, initial, onReady, showShareToggle, isShare
         </div>
 
       </label>
-
-      {displayName && !lockedByShared && (
-        <button onClick={e=>{e.preventDefault();onToggleDefault&&onToggleDefault(liveFile);}} style={{marginTop:5,display:"flex",alignItems:"center",gap:5,background:"transparent",border:"none",cursor:"pointer",padding:"2px 0",fontFamily:font}}>
-          <div style={{width:15,height:15,borderRadius:3,border:`1.5px solid ${isDefault?C.green:C.border}`,background:isDefault?C.green:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            {isDefault&&<span style={{fontSize:9,color:C.white,fontWeight:900,lineHeight:1}}>✓</span>}
-          </div>
-          <span style={{fontSize:11,color:isDefault?C.green:C.sub,fontWeight:500}}>Use for all new items</span>
-        </button>
-      )}
 
     </div>
 
@@ -571,14 +562,10 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
   const [saving, setSaving] = useState(false);
 
-  const [sharedToggles, setSharedToggles] = useState(Object.fromEntries(BRAND_FILES.map(k=>[k,false])));
+  const [sharedToggles, setSharedToggles] = useState(Object.fromEntries(BRAND_FILES.map(k=>[k,initial?.sharedBrandingFiles?.[k]||false])));
 
-  const [defaultBrandingFiles, setDefaultBrandingFiles] = useState(()=>{
-    try{ const s=JSON.parse(localStorage.getItem('shushu_brand_defaults')||'{}'); return Object.fromEntries(BRAND_FILES.map(k=>[k,s[k]||null])); }
-    catch{ return Object.fromEntries(BRAND_FILES.map(k=>[k,null])); }
-  });
-
-  const defaultBrandingFilesQueue = useRef({});
+  const sharedTogglesRef = useRef(sharedToggles);
+  useEffect(()=>{ sharedTogglesRef.current=sharedToggles; },[sharedToggles]);
 
   const [sharedNotesOn, setSharedNotesOn] = useState(false);
 
@@ -599,16 +586,13 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
   const addItem      = useCallback(()=>{
     const newIdx=items.length;
     pendingFiles.current[newIdx]={};
-    let stored={};
-    try{ stored=JSON.parse(localStorage.getItem('shushu_brand_defaults')||'{}'); }catch{}
     setItems(p=>{
       const newItem=emptyItem();
+      const src=p[0];
       BRAND_FILES.forEach(fname=>{
-        if(defaultBrandingFilesQueue.current[fname]){
-          pendingFiles.current[newIdx][fname]=defaultBrandingFilesQueue.current[fname];
-          newItem.brandingFiles[fname]={name:defaultBrandingFilesQueue.current[fname].name,key:null};
-        } else if(stored[fname]?.key){
-          newItem.brandingFiles[fname]={name:stored[fname].name,key:stored[fname].key};
+        if(sharedTogglesRef.current[fname]&&src?.brandingFiles?.[fname]){
+          newItem.brandingFiles[fname]=src.brandingFiles[fname];
+          if(pendingFiles.current[0]?.[fname]) pendingFiles.current[newIdx][fname]=pendingFiles.current[0][fname];
         }
       });
       return [...p,newItem];
@@ -683,19 +667,16 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
     setSaving(false);
 
-    try{
-      const stored=JSON.parse(localStorage.getItem('shushu_brand_defaults')||'{}');
-      BRAND_FILES.forEach(fname=>{
-        if(stored[fname]&&stored[fname].key===null){
-          const srcIdx=stored[fname].itemIdx||0;
-          const key=finalItems[srcIdx]?.brandingFiles?.[fname]?.key;
-          if(key) stored[fname]={...stored[fname],key};
-        }
-      });
-      localStorage.setItem('shushu_brand_defaults',JSON.stringify(stored));
-    }catch{}
+    // Propagate item 0 files to all items for shared fields
+    const item0BF = finalItems[0]?.brandingFiles||{};
+    const propagated = finalItems.map((it,i)=>{
+      if(i===0) return it;
+      const bf={...it.brandingFiles};
+      BRAND_FILES.forEach(fname=>{ if(sharedToggles[fname]&&item0BF[fname]) bf[fname]=item0BF[fname]; });
+      return {...it,brandingFiles:bf};
+    });
 
-    onSave({ notes, items: finalItems, _tempOid: oid });
+    onSave({ notes, items: propagated, sharedBrandingFiles: sharedToggles, _tempOid: oid });
 
   };
 
@@ -831,7 +812,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
                     initial={it.brandingFiles?.[fname]||null}
 
-                    showShareToggle={i===0&&items.length>1}
+                    showShareToggle={i===0}
 
                     isShared={isShared}
 
@@ -839,60 +820,11 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
                     lockedByShared={i>0&&isShared}
 
-                    isDefault={(()=>{
-                      const def=defaultBrandingFiles[fname];
-                      if(!def) return false;
-                      if(def.key!=null) return def.key===(it.brandingFiles?.[fname]?.key||null);
-                      // fresh file: match by File object reference
-                      const pending=pendingFiles.current[i]?.[fname];
-                      return pending!=null&&defaultBrandingFilesQueue.current[fname]===pending;
-                    })()}
-
-                    onToggleDefault={(liveFile)=>{
-                      const def=defaultBrandingFiles[fname];
-                      const currentFile=liveFile||pendingFiles.current[i]?.[fname];
-                      const currentKey=it.brandingFiles?.[fname]?.key||null;
-                      const thisIsDefault=def&&(
-                        (def.key!=null&&def.key===currentKey)||
-                        (def.key===null&&defaultBrandingFilesQueue.current[fname]!=null&&defaultBrandingFilesQueue.current[fname]===currentFile)
-                      );
-                      if(thisIsDefault){
-                        const next={...defaultBrandingFiles,[fname]:null};
-                        setDefaultBrandingFiles(next);
-                        defaultBrandingFilesQueue.current[fname]=undefined;
-                        localStorage.setItem('shushu_brand_defaults',JSON.stringify(next));
-                      } else {
-                        const name=currentFile?.name||it.brandingFiles?.[fname]?.name||null;
-                        if(name){
-                          const entry={name,key:currentKey,itemIdx:i};
-                          const next={...defaultBrandingFiles,[fname]:entry};
-                          setDefaultBrandingFiles(next);
-                          if(currentFile) defaultBrandingFilesQueue.current[fname]=currentFile;
-                          localStorage.setItem('shushu_brand_defaults',JSON.stringify(next));
-                        }
-                      }
-                    }}
-
                     onReady={f=>{
-
                       queueFile(i,fname,f);
-
                       if(i===0&&isShared){
-
                         items.forEach((_,j)=>{ if(j!==0) queueFile(j,fname,f); });
-
                       }
-
-                      // if this slot's file is currently the default, update default to new file
-                      const def=defaultBrandingFiles[fname];
-                      if(def&&def.key===null&&defaultBrandingFilesQueue.current[fname]===pendingFiles.current[i]?.[fname]){
-                        const entry={name:f.name,key:null,itemIdx:i};
-                        const next={...defaultBrandingFiles,[fname]:entry};
-                        setDefaultBrandingFiles(next);
-                        defaultBrandingFilesQueue.current[fname]=f;
-                        localStorage.setItem('shushu_brand_defaults',JSON.stringify(next));
-                      }
-
                     }}
 
                   />
