@@ -1343,6 +1343,13 @@ export default function App() {
 
     await saveOrders([o,...orders]); setView("list"); toast("Order submitted successfully.");
 
+    if(isCloud){
+      const customerEmail=profiles[currentUser.username]?.email||"";
+      supabase.functions.invoke("send-order-email",{
+        body:{order:o,customerEmail,customerName:currentUser.name}
+      }).catch(()=>{});
+    }
+
   };
 
   const handleSaveEdit=async form=>{
