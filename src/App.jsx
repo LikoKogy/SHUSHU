@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import "./App.css";
 import { supabase, isCloud } from "./supabase.js";
+import { downloadExcel, downloadZip } from "./exportOrder.js";
 
 const C = {
 
@@ -1067,6 +1068,8 @@ export default function App() {
 
   const [deleteTarget,setDeleteTarget]=useState(null);
 
+  const [zipLoading,setZipLoading]=useState(false);
+
   const [view,setView]=useState("list");
 
   const [selected,setSelected]=useState(null);
@@ -1903,13 +1906,21 @@ export default function App() {
 
               {o.notes&&<div style={{background:C.bg2,borderRadius:12,padding:"14px 16px",marginTop:8,marginBottom:24}}><div style={{fontSize:11,color:C.sub,fontWeight:600,marginBottom:4,textTransform:"uppercase",letterSpacing:.4}}>Notes</div><div style={{fontSize:14}}>{o.notes}</div></div>}
 
-              <div style={{display:"flex",gap:10,marginTop:16}}>
+              <div style={{display:"flex",gap:10,marginTop:16,flexWrap:"wrap"}}>
 
                 <PrimaryBtn onClick={()=>setView("edit")}>Edit</PrimaryBtn>
 
                 <button onClick={()=>handleArchive(o)} style={{background:C.bg2,color:C.text,border:`1px solid ${C.border}`,borderRadius:10,padding:"11px 18px",cursor:"pointer",fontFamily:font,fontSize:14}}>{o.status==="Archived"?"Restore":"Archive"}</button>
 
                 <DestructBtn onClick={()=>setDeleteTarget(o)}>Delete</DestructBtn>
+
+              </div>
+
+              <div style={{display:"flex",gap:10,marginTop:10,flexWrap:"wrap"}}>
+
+                <button onClick={()=>downloadExcel(o)} style={{background:"#e8f5e9",color:"#2e7d32",border:"1px solid #a5d6a7",borderRadius:10,padding:"11px 18px",cursor:"pointer",fontFamily:font,fontSize:14,fontWeight:600}}>⬇ Export Excel</button>
+
+                <button disabled={zipLoading} onClick={async()=>{setZipLoading(true);try{await downloadZip(o,loadFileData,(done,total)=>{});}finally{setZipLoading(false);}}} style={{background:zipLoading?"#e0e0e0":"#e3f2fd",color:zipLoading?C.gray:"#1565c0",border:`1px solid ${zipLoading?"#bdbdbd":"#90caf9"}`,borderRadius:10,padding:"11px 18px",cursor:zipLoading?"not-allowed":"pointer",fontFamily:font,fontSize:14,fontWeight:600}}>{zipLoading?"Preparing ZIP…":"⬇ Download ZIP"}</button>
 
               </div>
 
