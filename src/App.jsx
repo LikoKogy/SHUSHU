@@ -1534,7 +1534,7 @@ export default function App() {
 
       <div style={{textAlign:"center",marginBottom:48}}>
 
-        <div style={{fontSize:13,fontWeight:600,color:C.sub,letterSpacing:1,textTransform:"uppercase",marginBottom:10}}>GarmentCRM</div>
+        <img src="/shushu-logo.svg" alt="SHUSHU" style={{height:60,marginBottom:16,display:"block",margin:"0 auto 16px"}}/>
 
         <div className="login-hero" style={{fontSize:40,fontWeight:700,color:C.text,letterSpacing:-.5,lineHeight:1.1}}>Order management,<br/>done simply.</div>
 
