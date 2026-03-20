@@ -24,6 +24,16 @@ const LOGO_PLACEMENTS = ["Front Left Chest","Front Center","Back Center","Back N
 const BRAND_FILES = ["Logo Design","Neck Label","Washing / Care Label","Hang Tag","Packaging / Bag","Front Print","Back Print"];
 const BRAND_FILE_HAS_NOTE = {"Front Print":true,"Back Print":true};
 
+const BRAND_FILE_HINTS = {
+  "Logo Design":           "Vector (AI/EPS/PDF) preferred — PNG/JPG accepted at high resolution",
+  "Neck Label":            "Inner neck label design — include any size info if part of the artwork",
+  "Washing / Care Label":  "Care instructions — include fabric composition & washing symbols",
+  "Hang Tag":              "Hang tag or swing tag artwork — include barcode / price if applicable",
+  "Packaging / Bag":       "Polybag, box, or any packaging artwork",
+  "Front Print":           "Front screen print, DTF, or embroidery artwork",
+  "Back Print":            "Back print artwork",
+};
+
 const STATUS = { Active:C.green, Pending:C.amber, Draft:C.gray, Archived:C.purple };
 
 const ADMIN_PASS = "qwqw";
@@ -415,7 +425,7 @@ function CatalogSlot({initial, onReady}) {
 // ── MultiBrandingSlot ───────────────────────────────────────────────────────
 // Handles multiple file uploads + a note field for one branding file type.
 
-function MultiBrandingSlot({label, files=[], onChange, showShareToggle, isShared, onToggleShare, lockedByShared, noteValue, onNoteChange}) {
+function MultiBrandingSlot({label, hint, files=[], onChange, showShareToggle, isShared, onToggleShare, lockedByShared, noteValue, onNoteChange}) {
 
   const [previews, setPreviews] = useState({});
 
@@ -452,7 +462,7 @@ function MultiBrandingSlot({label, files=[], onChange, showShareToggle, isShared
     <div style={{marginBottom:14}}>
 
       {/* Label + share toggle */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:hint?2:6}}>
         <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,textTransform:"uppercase",display:"flex",alignItems:"center",gap:5}}>
           {label}
           {lockedByShared&&<span style={{background:C.green+"18",color:C.green,fontSize:10,fontWeight:700,borderRadius:99,padding:"1px 8px"}}>Shared</span>}
@@ -466,6 +476,7 @@ function MultiBrandingSlot({label, files=[], onChange, showShareToggle, isShared
           </button>
         )}
       </div>
+      {hint&&<div style={{fontSize:11,color:C.gray,marginBottom:6,lineHeight:1.4}}>{hint}</div>}
 
       {/* Uploaded files list */}
       {files.length>0&&(
@@ -889,7 +900,8 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
               <div>
 
-                <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:6,textTransform:"uppercase"}}>Model / SKU <span style={{color:C.red}}>*</span></div>
+                <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:2,textTransform:"uppercase"}}>Model / SKU <span style={{color:C.red}}>*</span></div>
+                <div style={{fontSize:11,color:C.gray,marginBottom:6}}>Product code from supplier catalog</div>
 
                 <Inp value={it.style} onChange={v=>setItemField(i,"style",v)} placeholder="e.g. LAC2002-1"/>
 
@@ -897,7 +909,8 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
               <div>
 
-                <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:6,textTransform:"uppercase"}}>Color(s) <span style={{color:C.red}}>*</span></div>
+                <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:2,textTransform:"uppercase"}}>Color(s) <span style={{color:C.red}}>*</span></div>
+                <div style={{fontSize:11,color:C.gray,marginBottom:6}}>List all colorways, comma-separated</div>
 
                 <Inp value={it.colors} onChange={v=>setItemField(i,"colors",v)} placeholder="e.g. Navy Blue, White"/>
 
@@ -905,7 +918,8 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
             </div>
 
-            <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:6,textTransform:"uppercase"}}>Quantity Per Size</div>
+            <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:2,textTransform:"uppercase"}}>Quantity Per Size</div>
+            <div style={{fontSize:11,color:C.gray,marginBottom:8}}>Enter 0 (or leave blank) for sizes you don't need</div>
 
             <div className="size-grid-scroll"><div style={{display:"grid",gridTemplateColumns:"repeat(8,minmax(44px,1fr))",gap:8,minWidth:340}}>
 
@@ -937,7 +951,8 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
             </div></div>
 
-            <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:8,textTransform:"uppercase"}}>Logo Placement <span style={{color:C.sub,fontWeight:400,textTransform:"none",letterSpacing:0}}>— select all that apply</span></div>
+            <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:2,textTransform:"uppercase"}}>Logo Placement <span style={{color:C.sub,fontWeight:400,textTransform:"none",letterSpacing:0}}>— select all that apply</span></div>
+            <div style={{fontSize:11,color:C.gray,marginBottom:8}}>Where on the garment should the branding be applied?</div>
 
             <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:20}}>
 
@@ -955,11 +970,15 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
             </div>
 
-            <textarea value={it.logoNote||""} onChange={e=>setItemField(i,"logoNote",e.target.value)} placeholder="Placement details (e.g. 3″ wide, centered 2″ below collar)…" rows={2} style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 12px",fontFamily:font,fontSize:13,resize:"vertical",outline:"none",marginBottom:20}}/>
+            <div style={{fontSize:11,color:C.gray,marginBottom:4}}>Placement details — size, position, thread color, pantone, etc. (optional)</div>
+            <textarea value={it.logoNote||""} onChange={e=>setItemField(i,"logoNote",e.target.value)} placeholder="e.g. 3″ wide, centered 2″ below collar, thread color PMS 286C…" rows={2} style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 12px",fontFamily:font,fontSize:13,resize:"vertical",outline:"none",marginBottom:20}}/>
 
             <div style={{borderTop:`1px solid ${C.border}`,paddingTop:16}}>
 
-              <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:14}}>Branding &amp; Label Files</div>
+              <div style={{marginBottom:14}}>
+                <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:3}}>Branding &amp; Label Files</div>
+                <div style={{fontSize:11,color:C.gray}}>Upload your artwork for each applicable file type. You can add multiple files per slot and leave a note with any print/placement details. Vector files (AI, EPS, PDF) are preferred for best print quality.</div>
+              </div>
 
               {BRAND_FILES.map(fname=>{
 
@@ -971,6 +990,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
                   <MultiBrandingSlot
                     key={`${i}-${fname}`}
                     label={fname}
+                    hint={BRAND_FILE_HINTS[fname]}
                     files={displayFiles}
                     onChange={fileArr=>{
                       setItems(prev=>prev.map((it2,j)=>{
