@@ -644,15 +644,34 @@ function ItemCard({it,idx,isAdmin,onDownload}) {
 
 // ── ProfileCard ────────────────────────────────────────────────────────────
 
-function ProfileCard({profile,onSave}) {
+function Avatar({logo,name,size=44}){
+  const initials=(name||"?").split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+  return(
+    <div style={{width:size,height:size,borderRadius:size/2,overflow:"hidden",background:C.bg3,border:`1px solid ${C.border}`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*0.36,fontWeight:700,color:C.sub}}>
+      {logo?<img src={logo} alt="logo" style={{width:"100%",height:"100%",objectFit:"cover"}}/>:initials}
+    </div>
+  );
+}
+
+function ProfileCard({profile,name,onSave}) {
 
   const [editing,setEditing]=useState(false);
 
   const [draft,setDraft]=useState(profile);
 
+  const fileRef=useRef(null);
+
   useEffect(()=>setDraft(profile),[profile]);
 
   const f=(k,v)=>setDraft(p=>({...p,[k]:v}));
+
+  const handleLogoChange=e=>{
+    const file=e.target.files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>f("logo",ev.target.result);
+    reader.readAsDataURL(file);
+  };
 
   if(!editing) return(
 
@@ -660,7 +679,10 @@ function ProfileCard({profile,onSave}) {
 
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
 
-        <span style={{fontSize:15,fontWeight:700}}>My Info</span>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <Avatar logo={profile.logo} name={name} size={44}/>
+          <span style={{fontSize:15,fontWeight:700}}>My Info</span>
+        </div>
 
         <button onClick={()=>setEditing(true)} style={{background:"transparent",color:C.sub,border:`1px solid ${C.border}`,borderRadius:8,padding:"5px 14px",fontSize:13,cursor:"pointer",fontFamily:font}}>Edit</button>
 
@@ -691,6 +713,21 @@ function ProfileCard({profile,onSave}) {
     <div style={{background:C.bg,border:`1.5px solid ${C.text}`,borderRadius:16,padding:24,marginBottom:28}}>
 
       <div style={{fontSize:15,fontWeight:700,marginBottom:16}}>Edit My Info</div>
+
+      <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:20}}>
+        <div style={{position:"relative",cursor:"pointer"}} onClick={()=>fileRef.current?.click()}>
+          <Avatar logo={draft.logo} name={name} size={64}/>
+          <div style={{position:"absolute",bottom:0,right:0,width:22,height:22,borderRadius:11,background:C.text,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>
+            <span style={{color:C.white,lineHeight:1}}>+</span>
+          </div>
+        </div>
+        <div>
+          <div style={{fontSize:13,fontWeight:600,color:C.text}}>Profile / Company Logo</div>
+          <div style={{fontSize:12,color:C.sub,marginTop:2}}>Click the image to upload</div>
+          {draft.logo&&<button onClick={()=>f("logo","")} style={{marginTop:4,background:"transparent",border:"none",color:C.red,fontSize:12,cursor:"pointer",padding:0,fontFamily:font}}>Remove</button>}
+        </div>
+        <input ref={fileRef} type="file" accept="image/*" onChange={handleLogoChange} style={{display:"none"}}/>
+      </div>
 
       <div className="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
 
@@ -1124,12 +1161,15 @@ function CustomerCard({username,u,prof,meta,userOrders,onToggleStar,onSaveNote,o
         </div>
       )}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-        <div>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-            <span style={{fontSize:17,fontWeight:700,color:C.text}}>{u.name}</span>
-            {meta.starred&&<span style={{fontSize:13}}>⭐</span>}
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <Avatar logo={prof.logo} name={u.name} size={40}/>
+          <div>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
+              <span style={{fontSize:17,fontWeight:700,color:C.text}}>{u.name}</span>
+              {meta.starred&&<span style={{fontSize:13}}>⭐</span>}
+            </div>
+            <div style={{fontSize:13,color:C.sub}}>@{username}</div>
           </div>
-          <div style={{fontSize:13,color:C.sub}}>@{username}</div>
         </div>
         <div style={{display:"flex",gap:8,alignItems:"center"}}>
           <button onClick={()=>onToggleStar(username)} style={{background:meta.starred?C.amber+"20":"transparent",border:`1px solid ${meta.starred?C.amber:C.border}`,borderRadius:8,padding:"6px 12px",cursor:"pointer",fontSize:14,fontFamily:font,color:meta.starred?C.amber:C.sub}}>{meta.starred?"★ Starred":"☆ Star"}</button>
@@ -1247,7 +1287,7 @@ export default function App() {
 
         const { data: pd } = await supabase.from("crm_profiles").select();
 
-        if (pd) setProfiles(Object.fromEntries(pd.map(r=>[r.username,{email:r.email||"",phone:r.phone||"",address:r.address||"",infoNote:r.info_note||""}])));
+        if (pd) setProfiles(Object.fromEntries(pd.map(r=>[r.username,{email:r.email||"",phone:r.phone||"",address:r.address||"",infoNote:r.info_note||"",logo:r.logo||""}])));
 
         const { data: md } = await supabase.from("crm_admin_meta").select();
 
@@ -1295,7 +1335,7 @@ export default function App() {
 
     if(isCloud){
 
-      await supabase.from("crm_profiles").upsert(Object.entries(p).map(([username,v])=>({username,email:v.email||"",phone:v.phone||"",address:v.address||"",info_note:v.infoNote||""})));
+      await supabase.from("crm_profiles").upsert(Object.entries(p).map(([username,v])=>({username,email:v.email||"",phone:v.phone||"",address:v.address||"",info_note:v.infoNote||"",logo:v.logo||""})));
 
     } else {
 
@@ -1679,7 +1719,7 @@ export default function App() {
 
           {view==="list"&&(<>
 
-            <ProfileCard profile={profile} onSave={data=>handleSaveProfile(currentUser.username,data)}/>
+            <ProfileCard profile={profile} name={currentUser.name} onSave={data=>handleSaveProfile(currentUser.username,data)}/>
 
             {myOrders.length===0
 
