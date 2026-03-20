@@ -1793,7 +1793,9 @@ export default function App() {
 
           {view==="detail"&&selected&&(()=>{
 
-            const o=orders.find(x=>x.id===selected.id)||selected;
+            const _o=orders.find(x=>x.id===selected.id)||selected;
+            const _prof=profiles[_o.owner]||{};
+            const o={..._o,email:_prof.email||_o.email||"",phone:_prof.phone||_o.phone||""};
 
             return(
 
