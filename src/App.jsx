@@ -1722,13 +1722,14 @@ export default function App() {
 
         <Nav title="My Orders" sub={currentUser.name} right={<>
 
+          <div style={{display:"flex",alignItems:"center",gap:2}}>
+            <GhostBtn onClick={logout} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>Sign Out</GhostBtn>
+            <GhostBtn onClick={()=>{setShowChangePw(true);setCpOld("");setCpNew("");setCpConfirm("");setCpErr("");}} style={{padding:"8px 10px",fontSize:14,color:C.sub}}>🔑</GhostBtn>
+          </div>
+
           {view==="list"&&<PrimaryBtn onClick={()=>setView("new")} style={{padding:"8px 18px",fontSize:14}}>+ New Order</PrimaryBtn>}
 
           {view!=="list"&&<GhostBtn onClick={()=>setView("list")} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>← Back</GhostBtn>}
-
-          <GhostBtn onClick={()=>{setShowChangePw(true);setCpOld("");setCpNew("");setCpConfirm("");setCpErr("");}} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>🔑</GhostBtn>
-
-          <GhostBtn onClick={logout} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>Sign Out</GhostBtn>
 
         </>} avatar={<Avatar logo={profile.logo} name={currentUser.name} size={40}/>}/>
 
