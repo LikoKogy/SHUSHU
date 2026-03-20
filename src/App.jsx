@@ -1672,7 +1672,6 @@ export default function App() {
       <div className="nav-inner" style={{maxWidth:960,margin:"0 auto",padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
 
         <div style={{display:"flex",alignItems:"center",gap:20}}>
-          {avatar&&<div style={{flexShrink:0}}>{avatar}</div>}
           <div style={{lineHeight:1}}>
             <div style={{fontFamily:"'Barlow Semi Condensed', sans-serif",fontWeight:800,fontSize:22,color:C.text,letterSpacing:-.3,lineHeight:1}}>SHUSHU</div>
             <div style={{fontSize:9,fontWeight:600,color:C.sub,letterSpacing:1,textTransform:"uppercase",marginTop:1}}>GarmentCRM</div>
@@ -1730,7 +1729,9 @@ export default function App() {
 
           <GhostBtn onClick={logout} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>Sign Out</GhostBtn>
 
-        </>} avatar={<Avatar logo={profile.logo} name={currentUser.name} size={44}/>}/>
+          <Avatar logo={profile.logo} name={currentUser.name} size={40}/>
+
+        </>}/>
 
         <Wrap>
 
