@@ -1534,7 +1534,7 @@ export default function App() {
 
       <div style={{textAlign:"center",marginBottom:48}}>
 
-        <img src="shushu-logo.svg" alt="SHUSHU" style={{height:60,marginBottom:16,display:"block",margin:"0 auto 16px"}}/>
+        <div style={{fontFamily:"'Nunito', sans-serif",fontWeight:900,fontSize:64,color:"#000",letterSpacing:-1,lineHeight:1,marginBottom:16}}>SHUSHU</div>
 
         <div className="login-hero" style={{fontSize:40,fontWeight:700,color:C.text,letterSpacing:-.5,lineHeight:1.1}}>Order management,<br/>done simply.</div>
 
