@@ -1727,8 +1727,6 @@ export default function App() {
 
           <GhostBtn onClick={()=>{setShowChangePw(true);setCpOld("");setCpNew("");setCpConfirm("");setCpErr("");}} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>🔑</GhostBtn>
 
-          <Avatar logo={profile.logo} name={currentUser.name} size={34}/>
-
           <GhostBtn onClick={logout} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>Sign Out</GhostBtn>
 
         </>}/>
@@ -1803,7 +1801,10 @@ export default function App() {
 
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
 
-                  <div><div style={{fontSize:26,fontWeight:700,letterSpacing:-.3}}>Order #{o.id}</div><div style={{color:C.sub,marginTop:4}}>{o.ownerName}</div></div>
+                  <div style={{display:"flex",alignItems:"center",gap:16}}>
+                    <Avatar logo={profile.logo} name={currentUser.name} size={52}/>
+                    <div><div style={{fontSize:26,fontWeight:700,letterSpacing:-.3}}>Order #{o.id}</div><div style={{color:C.sub,marginTop:4}}>{o.ownerName}</div></div>
+                  </div>
 
                   <Badge status={o.status}/>
 
