@@ -40,12 +40,9 @@
     row-gap: 8px;
   }
 
-  /* Right-side nav buttons: full width, space-between on mobile */
+  /* Right-side nav buttons: full width on mobile */
   .nav-right {
-    flex-wrap: wrap;
-    gap: 6px !important;
     width: 100%;
-    justify-content: space-between;
   }
 
   /* Two-column grids → single column on mobile */
