@@ -33,23 +33,17 @@
     line-height: 1.25 !important;
   }
 
-  /* Nav bar inner wrapper: single line on mobile */
+  /* Nav bar inner wrapper: wrap title + buttons on small screens */
   .nav-inner {
-    padding: 8px 10px !important;
-    flex-wrap: nowrap !important;
-    gap: 4px;
+    padding: 10px 16px !important;
+    flex-wrap: wrap;
+    row-gap: 8px;
   }
 
-  /* Right-side nav buttons: no wrap, tight gap */
+  /* Right-side nav buttons: allow wrapping */
   .nav-right {
-    flex-wrap: nowrap !important;
-    gap: 2px !important;
-  }
-
-  /* Shrink ghost button padding on mobile so nav fits */
-  .nav-right button {
-    padding: 6px 8px !important;
-    font-size: 13px !important;
+    flex-wrap: wrap;
+    gap: 6px !important;
   }
 
   /* Two-column grids → single column on mobile */
