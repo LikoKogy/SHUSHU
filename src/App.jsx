@@ -1534,7 +1534,7 @@ export default function App() {
 
       <div style={{textAlign:"center",marginBottom:48}}>
 
-        <div style={{fontFamily:"'Nunito', sans-serif",fontWeight:900,fontSize:64,color:"#000",letterSpacing:-1,lineHeight:1,marginBottom:6}}>SHUSHU</div>
+        <div style={{fontFamily:"'Barlow Semi Condensed', sans-serif",fontWeight:800,fontSize:64,color:"#000",letterSpacing:-1,lineHeight:1,marginBottom:6}}>SHUSHU</div>
         <div style={{fontSize:13,fontWeight:600,color:C.sub,letterSpacing:1,textTransform:"uppercase",marginBottom:20}}>GarmentCRM</div>
 
         <div className="login-hero" style={{fontSize:40,fontWeight:700,color:C.text,letterSpacing:-.5,lineHeight:1.1}}>Order management,<br/>done simply.</div>
