@@ -1819,6 +1819,10 @@ export default function App() {
 
                 {o.notes&&<div style={{background:C.bg2,borderRadius:12,padding:"14px 16px",marginTop:8}}><div style={{fontSize:11,color:C.sub,fontWeight:600,marginBottom:4,textTransform:"uppercase",letterSpacing:.4}}>Notes</div><div style={{fontSize:14}}>{o.notes}</div></div>}
 
+                <div style={{marginTop:16}}>
+                  <button onClick={()=>downloadExcel(o)} style={{background:"#e8f5e9",color:"#2e7d32",border:"1px solid #a5d6a7",borderRadius:10,padding:"11px 18px",cursor:"pointer",fontFamily:font,fontSize:14,fontWeight:600}}>⬇ Export Excel</button>
+                </div>
+
               </div>
 
             );
