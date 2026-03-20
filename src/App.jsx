@@ -1287,7 +1287,14 @@ export default function App() {
 
         const { data: pd } = await supabase.from("crm_profiles").select();
 
-        if (pd) setProfiles(Object.fromEntries(pd.map(r=>[r.username,{email:r.email||"",phone:r.phone||"",address:r.address||"",infoNote:r.info_note||"",logo:r.logo||""}])));
+        if (pd) {
+          const profileMap = Object.fromEntries(pd.map(r=>[r.username,{email:r.email||"",phone:r.phone||"",address:r.address||"",infoNote:r.info_note||"",logo:""}]));
+          // merge logos stored locally (base64 strings live in localStorage to avoid DB schema requirement)
+          Object.keys(profileMap).forEach(u=>{
+            try{const l=localStorage.getItem("crm-logo-"+u);if(l)profileMap[u].logo=l;}catch(_){}
+          });
+          setProfiles(profileMap);
+        }
 
         const { data: md } = await supabase.from("crm_admin_meta").select();
 
@@ -1297,7 +1304,7 @@ export default function App() {
 
         try{const r=storage.get("crm-users");if(r)setUsers(JSON.parse(r.value));}catch(_){}
 
-        try{const r=storage.get("crm-profiles");if(r)setProfiles(JSON.parse(r.value));}catch(_){}
+        try{const r=storage.get("crm-profiles");if(r){const pm=JSON.parse(r.value);Object.keys(pm).forEach(u=>{try{const l=localStorage.getItem("crm-logo-"+u);if(l)pm[u].logo=l;}catch(_){}});setProfiles(pm);}}catch(_){}
 
       }
 
@@ -1333,9 +1340,18 @@ export default function App() {
 
     setProfiles(p);
 
+    // always persist logos in localStorage (base64 strings; keeps DB schema simple)
+    Object.entries(p).forEach(([username,v])=>{
+      try{
+        if(v.logo)localStorage.setItem("crm-logo-"+username,v.logo);
+        else localStorage.removeItem("crm-logo-"+username);
+      }catch(_){}
+    });
+
     if(isCloud){
 
-      await supabase.from("crm_profiles").upsert(Object.entries(p).map(([username,v])=>({username,email:v.email||"",phone:v.phone||"",address:v.address||"",info_note:v.infoNote||"",logo:v.logo||""})));
+      // strip logo from DB payload — column not required in crm_profiles
+      await supabase.from("crm_profiles").upsert(Object.entries(p).map(([username,v])=>({username,email:v.email||"",phone:v.phone||"",address:v.address||"",info_note:v.infoNote||""})));
 
     } else {
 
