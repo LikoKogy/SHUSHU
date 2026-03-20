@@ -2018,7 +2018,10 @@ export default function App() {
 
                 <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
 
-                  <div><div style={{fontWeight:600,fontSize:15}}>{o.ownerName||"—"}</div><div style={{color:C.sub,fontSize:13}}>{o.company||o.contact||""}</div></div>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <Avatar logo={profiles[o.owner]?.logo} name={o.ownerName||"?"} size={36}/>
+                    <div><div style={{fontWeight:600,fontSize:15}}>{o.ownerName||"—"}</div><div style={{color:C.sub,fontSize:13}}>{o.company||o.contact||""}</div></div>
+                  </div>
 
                   <Badge status={o.status}/>
 
