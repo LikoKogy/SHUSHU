@@ -183,7 +183,7 @@ export async function buildExcelBlob(order) {
     r++;
 
     // Style / Colors / Catalog
-    infoRow(ws, r++, "Style / Model",  item.style);
+    infoRow(ws, r++, "Model / SKU",    item.style);
     infoRow(ws, r++, "Colors",         item.colors);
     infoRow(ws, r++, "Catalog Image",  item.catalogImage?.name);
 
