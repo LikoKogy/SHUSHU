@@ -1160,8 +1160,8 @@ function CustomerCard({username,u,prof,meta,userOrders,onToggleStar,onSaveNote,o
           </div>
         </div>
       )}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
+      <div style={{marginBottom:12}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
           <Avatar logo={prof.logo} name={u.name} size={40}/>
           <div>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
@@ -1171,8 +1171,8 @@ function CustomerCard({username,u,prof,meta,userOrders,onToggleStar,onSaveNote,o
             <div style={{fontSize:13,color:C.sub}}>@{username}</div>
           </div>
         </div>
-        <div style={{display:"flex",gap:8,alignItems:"center"}}>
-          <button onClick={()=>onToggleStar(username)} style={{background:meta.starred?C.amber+"20":"transparent",border:`1px solid ${meta.starred?C.amber:C.border}`,borderRadius:8,padding:"6px 12px",cursor:"pointer",fontSize:14,fontFamily:font,color:meta.starred?C.amber:C.sub}}>{meta.starred?"★ Starred":"☆ Star"}</button>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <button onClick={()=>onToggleStar(username)} style={{background:meta.starred?C.amber+"20":"transparent",border:`1px solid ${meta.starred?C.amber:C.border}`,borderRadius:8,padding:"6px 12px",cursor:"pointer",fontSize:13,fontFamily:font,color:meta.starred?C.amber:C.sub}}>{meta.starred?"★ Starred":"☆ Star"}</button>
           <button onClick={()=>setShowReset(true)} style={{background:"transparent",color:C.sub,border:`1px solid ${C.border}`,borderRadius:8,padding:"6px 12px",fontSize:13,cursor:"pointer",fontFamily:font}}>🔑 Reset PW</button>
           <button onClick={()=>onDelete(username)} style={{background:"transparent",color:C.red,border:`1px solid ${C.red}30`,borderRadius:8,padding:"6px 12px",fontSize:13,cursor:"pointer",fontFamily:font}}>Delete</button>
         </div>
@@ -1908,7 +1908,7 @@ export default function App() {
 
       <Nav title={<span>GarmentCRM <span style={{fontSize:12,fontWeight:600,color:C.sub,background:C.bg3,borderRadius:99,padding:"2px 9px",marginLeft:6}}>Admin</span></span>} sub={adminSection==="orders"?"All orders":"Customers"}
 
-        right={<>{view!=="list"&&<GhostBtn onClick={()=>{setView("list");setAdminSection("orders");}} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>← Dashboard</GhostBtn>}<GhostBtn onClick={logout} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>Sign Out</GhostBtn></>}/>
+        right={<>{(view!=="list"||adminSection!=="orders")&&<GhostBtn onClick={()=>{setView("list");setAdminSection("orders");}} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>← Back</GhostBtn>}<GhostBtn onClick={logout} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>Sign Out</GhostBtn></>}/>
 
       <Wrap>
 
