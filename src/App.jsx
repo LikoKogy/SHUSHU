@@ -25,13 +25,13 @@ const BRAND_FILES = ["Logo Design","Neck Label","Washing / Care Label","Hang Tag
 const BRAND_FILE_HAS_NOTE = {"Front Print":true,"Back Print":true};
 
 const BRAND_FILE_HINTS = {
-  "Logo Design":           "Vector (AI/EPS/PDF) preferred — PNG/JPG accepted at high resolution",
-  "Neck Label":            "Inner neck label design — include any size info if part of the artwork",
-  "Washing / Care Label":  "Care instructions — include fabric composition & washing symbols",
-  "Hang Tag":              "Hang tag or swing tag artwork — include barcode / price if applicable",
-  "Packaging / Bag":       "Polybag, box, or any packaging artwork",
-  "Front Print":           "Front screen print, DTF, or embroidery artwork",
-  "Back Print":            "Back print artwork",
+  "Logo Design":           "Your main brand logo. AI or PDF gives the best result, but a clear PNG works too.",
+  "Neck Label":            "The small label that sits inside the collar. Upload your design, or any reference you have.",
+  "Washing / Care Label":  "The care tag inside the garment with washing instructions. If you don't have one yet, just leave a note and we'll sort it out.",
+  "Hang Tag":              "The tag that hangs off the garment — usually has your brand name, price, or a barcode.",
+  "Packaging / Bag":       "The bag, box, or wrapping your product comes in. Upload whatever packaging design you have.",
+  "Front Print":           "Any design, logo, or text that goes on the front of the garment.",
+  "Back Print":            "Any design, logo, or text that goes on the back of the garment.",
 };
 
 const STATUS = { Active:C.green, Pending:C.amber, Draft:C.gray, Archived:C.purple };
@@ -901,7 +901,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
               <div>
 
                 <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:2,textTransform:"uppercase"}}>Model / SKU <span style={{color:C.red}}>*</span></div>
-                <div style={{fontSize:11,color:C.gray,marginBottom:6}}>Product code from supplier catalog</div>
+                <div style={{fontSize:11,color:C.gray,marginBottom:6}}>The item code from the catalog — usually found under the product photo (e.g. LAC2002-1)</div>
 
                 <Inp value={it.style} onChange={v=>setItemField(i,"style",v)} placeholder="e.g. LAC2002-1"/>
 
@@ -910,7 +910,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
               <div>
 
                 <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:2,textTransform:"uppercase"}}>Color(s) <span style={{color:C.red}}>*</span></div>
-                <div style={{fontSize:11,color:C.gray,marginBottom:6}}>List all colorways, comma-separated</div>
+                <div style={{fontSize:11,color:C.gray,marginBottom:6}}>What color(s) are you ordering? List them all, separated by a comma</div>
 
                 <Inp value={it.colors} onChange={v=>setItemField(i,"colors",v)} placeholder="e.g. Navy Blue, White"/>
 
@@ -919,7 +919,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
             </div>
 
             <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:2,textTransform:"uppercase"}}>Quantity Per Size</div>
-            <div style={{fontSize:11,color:C.gray,marginBottom:8}}>Enter 0 (or leave blank) for sizes you don't need</div>
+            <div style={{fontSize:11,color:C.gray,marginBottom:8}}>How many pieces do you want in each size? Leave a size at 0 if you don't need it</div>
 
             <div className="size-grid-scroll"><div style={{display:"grid",gridTemplateColumns:"repeat(8,minmax(44px,1fr))",gap:8,minWidth:340}}>
 
@@ -952,7 +952,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
             </div></div>
 
             <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:2,textTransform:"uppercase"}}>Logo Placement <span style={{color:C.sub,fontWeight:400,textTransform:"none",letterSpacing:0}}>— select all that apply</span></div>
-            <div style={{fontSize:11,color:C.gray,marginBottom:8}}>Where on the garment should the branding be applied?</div>
+            <div style={{fontSize:11,color:C.gray,marginBottom:8}}>Tap all the spots where you'd like your logo or brand to appear on the garment</div>
 
             <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:20}}>
 
@@ -970,14 +970,14 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
             </div>
 
-            <div style={{fontSize:11,color:C.gray,marginBottom:4}}>Placement details — size, position, thread color, pantone, etc. (optional)</div>
-            <textarea value={it.logoNote||""} onChange={e=>setItemField(i,"logoNote",e.target.value)} placeholder="e.g. 3″ wide, centered 2″ below collar, thread color PMS 286C…" rows={2} style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 12px",fontFamily:font,fontSize:13,resize:"vertical",outline:"none",marginBottom:20}}/>
+            <div style={{fontSize:11,color:C.gray,marginBottom:4}}>Any extra details about the placement — size, exact position, color, etc. Don't worry if you're unsure, we'll confirm with you (optional)</div>
+            <textarea value={it.logoNote||""} onChange={e=>setItemField(i,"logoNote",e.target.value)} placeholder="e.g. logo 3″ wide, centered on chest, 2″ below collar…" rows={2} style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"9px 12px",fontFamily:font,fontSize:13,resize:"vertical",outline:"none",marginBottom:20}}/>
 
             <div style={{borderTop:`1px solid ${C.border}`,paddingTop:16}}>
 
               <div style={{marginBottom:14}}>
                 <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:3}}>Branding &amp; Label Files</div>
-                <div style={{fontSize:11,color:C.gray}}>Upload your artwork for each applicable file type. You can add multiple files per slot and leave a note with any print/placement details. Vector files (AI, EPS, PDF) are preferred for best print quality.</div>
+                <div style={{fontSize:11,color:C.gray}}>Upload the design files for your custom branding. Don't worry if you don't have everything — just upload what you have and leave a note if needed. You can add multiple files to each slot.</div>
               </div>
 
               {BRAND_FILES.map(fname=>{
