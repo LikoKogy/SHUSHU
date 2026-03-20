@@ -1613,9 +1613,16 @@ export default function App() {
 
     <div style={{borderBottom:`1px solid ${C.border}`,position:"sticky",top:0,background:C.bg+"ee",backdropFilter:"blur(20px)",zIndex:100}}>
 
-      <div className="nav-inner" style={{maxWidth:960,margin:"0 auto",padding:"16px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div className="nav-inner" style={{maxWidth:960,margin:"0 auto",padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
 
-        <div><div style={{fontSize:20,fontWeight:700,color:C.text,letterSpacing:-.3}}>{title}</div>{sub&&<div style={{fontSize:13,color:C.sub}}>{sub}</div>}</div>
+        <div style={{display:"flex",alignItems:"center",gap:20}}>
+          <div style={{lineHeight:1}}>
+            <div style={{fontFamily:"'Barlow Semi Condensed', sans-serif",fontWeight:800,fontSize:22,color:C.text,letterSpacing:-.3,lineHeight:1}}>SHUSHU</div>
+            <div style={{fontSize:9,fontWeight:600,color:C.sub,letterSpacing:1,textTransform:"uppercase",marginTop:1}}>GarmentCRM</div>
+          </div>
+          <div style={{width:1,height:32,background:C.border}}/>
+          <div><div style={{fontSize:16,fontWeight:700,color:C.text,letterSpacing:-.3}}>{title}</div>{sub&&<div style={{fontSize:12,color:C.sub}}>{sub}</div>}</div>
+        </div>
 
         <div className="nav-right" style={{display:"flex",gap:8,alignItems:"center"}}>{right}</div>
 
