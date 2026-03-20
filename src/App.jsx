@@ -910,7 +910,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
               <div>
 
                 <div style={{fontSize:12,fontWeight:600,color:C.sub,letterSpacing:.5,marginBottom:2,textTransform:"uppercase"}}>Color(s) <span style={{color:C.red}}>*</span></div>
-                <div style={{fontSize:11,color:C.gray,marginBottom:6}}>What color are you ordering? List them all, separated by a comma</div>
+                <div style={{fontSize:11,color:C.gray,marginBottom:6}}>What color are you ordering?</div>
 
                 <Inp value={it.colors} onChange={v=>setItemField(i,"colors",v)} placeholder="e.g. Navy Blue, White"/>
 
