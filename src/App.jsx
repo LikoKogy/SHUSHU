@@ -1729,6 +1729,8 @@ export default function App() {
 
           <GhostBtn onClick={logout} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>Sign Out</GhostBtn>
 
+          <Avatar logo={profile.logo} name={currentUser.name} size={34}/>
+
         </>}/>
 
         <Wrap>
