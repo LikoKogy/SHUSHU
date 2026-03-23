@@ -1282,7 +1282,7 @@ function AdminCatalogSection({catalogs,onAdd,onDelete,onView}){
             </div>
             <div style={{fontWeight:600,fontSize:15,color:C.text}}>{c.name}</div>
             <div style={{fontSize:12,color:C.sub,wordBreak:"break-all"}}>{c.url.length>50?c.url.slice(0,50)+"…":c.url}</div>
-            <button onClick={()=>onView(c)} style={{background:C.text,color:C.white,border:"none",borderRadius:10,padding:"9px",fontFamily:font,fontSize:14,fontWeight:600,cursor:"pointer"}}>View PDF</button>
+            <button onClick={()=>window.open(c.url,"_blank")} style={{background:C.text,color:C.white,border:"none",borderRadius:10,padding:"9px",fontFamily:font,fontSize:14,fontWeight:600,cursor:"pointer"}}>View PDF</button>
           </div>
         ))}
       </div>
@@ -1879,7 +1879,7 @@ export default function App() {
                         onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
                         <div style={{fontSize:48,textAlign:"center",paddingTop:8}}>📄</div>
                         <div style={{fontWeight:600,fontSize:15,color:C.text,textAlign:"center"}}>{c.name}</div>
-                        <button onClick={()=>setCatalogViewing(c)} style={{background:C.text,color:C.white,border:"none",borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,fontWeight:600,cursor:"pointer"}}>View Catalog</button>
+                        <button onClick={()=>window.open(c.url,"_blank")} style={{background:C.text,color:C.white,border:"none",borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,fontWeight:600,cursor:"pointer"}}>View Catalog</button>
                       </div>
                     ))}
                   </div>
@@ -1948,15 +1948,6 @@ export default function App() {
 
           </>)}
 
-          {catalogViewing&&(
-            <div style={{position:"fixed",inset:0,background:"#000c",zIndex:1000,display:"flex",flexDirection:"column"}} onClick={()=>setCatalogViewing(null)}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 20px",background:C.text,color:C.white}} onClick={e=>e.stopPropagation()}>
-                <div style={{fontWeight:600,fontSize:16}}>{catalogViewing.name}</div>
-                <button onClick={()=>setCatalogViewing(null)} style={{background:"transparent",border:"none",color:C.white,fontSize:22,cursor:"pointer",lineHeight:1}}>✕</button>
-              </div>
-              <iframe src={pdfViewerUrl(catalogViewing.url)} style={{flex:1,border:"none",width:"100%"}} title={catalogViewing.name} onClick={e=>e.stopPropagation()}/>
-            </div>
-          )}
 
           {view==="new"&&<div style={{maxWidth:700,margin:"0 auto"}}><div style={{fontSize:26,fontWeight:700,letterSpacing:-.3,marginBottom:28}}>New Order</div><OrderForm onSave={handleSaveNew} onCancel={()=>setView("list")} editMode={false}/></div>}
 
