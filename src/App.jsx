@@ -1257,7 +1257,7 @@ function PdfThumbnail({url,size=120}){
 
 // ── Main App ───────────────────────────────────────────────────────────────
 
-function AdminCatalogSection({catalogs,onAdd,onDelete,onView}){
+function AdminCatalogSection({catalogs,onAdd,onDelete,onEdit,onView}){
   const [name,setName]=useState("");
   const [url,setUrl]=useState("");
   const [coverUrl,setCoverUrl]=useState("");
@@ -1265,6 +1265,21 @@ function AdminCatalogSection({catalogs,onAdd,onDelete,onView}){
   const [adding,setAdding]=useState(false);
   const [loading,setLoading]=useState(false);
   const fileRef=useRef();
+
+  // inline edit state
+  const [editingId,setEditingId]=useState(null);
+  const [editName,setEditName]=useState("");
+  const [editCover,setEditCover]=useState("");
+  const [editSaving,setEditSaving]=useState(false);
+
+  const startEdit=(c)=>{setEditingId(c.id);setEditName(c.name);setEditCover(c.cover_url||"");};
+  const cancelEdit=()=>{setEditingId(null);};
+  const saveEdit=async(id)=>{
+    setEditSaving(true);
+    await onEdit({id,name:editName.trim(),coverUrl:editCover.trim()});
+    setEditingId(null);
+    setEditSaving(false);
+  };
 
   const submit=async()=>{
     if(!name.trim()){return;}
@@ -1326,16 +1341,41 @@ function AdminCatalogSection({catalogs,onAdd,onDelete,onView}){
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:14}}>
         {catalogs.map(c=>(
-          <div key={c.id} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:16,padding:20,display:"flex",flexDirection:"column",gap:12}}>
-            <div style={{position:"relative"}}>
-              {c.cover_url
-                ?<img src={c.cover_url} alt="cover" style={{width:"100%",height:120,objectFit:"cover",borderRadius:8,display:"block"}}/>
-                :<PdfThumbnail url={c.url} size={120}/>}
-              <button onClick={()=>onDelete(c.id)} style={{position:"absolute",top:6,right:6,background:"#ffffffcc",border:`1px solid ${C.red}50`,color:C.red,borderRadius:8,padding:"4px 10px",fontSize:12,cursor:"pointer",fontFamily:font}}>Delete</button>
-            </div>
-            <div style={{fontWeight:600,fontSize:15,color:C.text}}>{c.name}</div>
-            <div style={{fontSize:12,color:C.sub,wordBreak:"break-all"}}>{c.url.length>50?c.url.slice(0,50)+"…":c.url}</div>
-            <button onClick={()=>window.open(c.url,"_blank")} style={{background:C.text,color:C.white,border:"none",borderRadius:10,padding:"9px",fontFamily:font,fontSize:14,fontWeight:600,cursor:"pointer"}}>View PDF</button>
+          <div key={c.id} style={{background:C.bg,border:`1px solid ${editingId===c.id?C.text:C.border}`,borderRadius:16,padding:20,display:"flex",flexDirection:"column",gap:12}}>
+            {editingId===c.id?(
+              <>
+                <div style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:2}}>Edit Catalog</div>
+                <div>
+                  <div style={{fontSize:11,fontWeight:600,color:C.sub,marginBottom:5,textTransform:"uppercase",letterSpacing:.4}}>Name</div>
+                  <input value={editName} onChange={e=>setEditName(e.target.value)} style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:9,padding:"9px 12px",fontFamily:font,fontSize:14,outline:"none"}}/>
+                </div>
+                <div>
+                  <div style={{fontSize:11,fontWeight:600,color:C.sub,marginBottom:5,textTransform:"uppercase",letterSpacing:.4}}>Cover Image URL</div>
+                  <input value={editCover} onChange={e=>setEditCover(e.target.value)} placeholder="https://i.imgur.com/…" style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:9,padding:"9px 12px",fontFamily:font,fontSize:14,outline:"none"}}/>
+                  <div style={{fontSize:11,color:C.sub,marginTop:4}}>Paste any image URL to use as the cover photo.</div>
+                </div>
+                {editCover&&<img src={editCover} alt="preview" style={{width:"100%",height:110,objectFit:"cover",borderRadius:8,border:`1px solid ${C.border}`}} onError={e=>{e.target.style.display="none";}}/>}
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={cancelEdit} style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:9,padding:"9px",fontFamily:font,fontSize:13,cursor:"pointer",color:C.sub}}>Cancel</button>
+                  <button onClick={()=>saveEdit(c.id)} disabled={editSaving||!editName.trim()} style={{flex:1,background:C.text,color:C.white,border:"none",borderRadius:9,padding:"9px",fontFamily:font,fontSize:13,fontWeight:600,cursor:editSaving?"wait":"pointer"}}>{editSaving?"Saving…":"Save"}</button>
+                </div>
+              </>
+            ):(
+              <>
+                <div style={{position:"relative"}}>
+                  {c.cover_url
+                    ?<img src={c.cover_url} alt="cover" style={{width:"100%",height:120,objectFit:"cover",borderRadius:8,display:"block"}}/>
+                    :<PdfThumbnail url={c.url} size={120}/>}
+                  <div style={{position:"absolute",top:6,right:6,display:"flex",gap:5}}>
+                    <button onClick={()=>startEdit(c)} style={{background:"#ffffffcc",border:`1px solid ${C.border}`,color:C.text,borderRadius:8,padding:"4px 10px",fontSize:12,cursor:"pointer",fontFamily:font,fontWeight:600}}>Edit</button>
+                    <button onClick={()=>onDelete(c.id)} style={{background:"#ffffffcc",border:`1px solid ${C.red}50`,color:C.red,borderRadius:8,padding:"4px 10px",fontSize:12,cursor:"pointer",fontFamily:font}}>Delete</button>
+                  </div>
+                </div>
+                <div style={{fontWeight:600,fontSize:15,color:C.text}}>{c.name}</div>
+                <div style={{fontSize:12,color:C.sub,wordBreak:"break-all"}}>{c.url.length>50?c.url.slice(0,50)+"…":c.url}</div>
+                <button onClick={()=>window.open(c.url,"_blank")} style={{background:C.text,color:C.white,border:"none",borderRadius:10,padding:"9px",fontFamily:font,fontSize:14,fontWeight:600,cursor:"pointer"}}>View PDF</button>
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -1584,6 +1624,25 @@ export default function App() {
     if(isCloud) await supabase.from("crm_catalogs").delete().eq("id",id);
     setCatalogs(prev=>prev.filter(c=>c.id!==id));
     toast("Catalog deleted.");
+  };
+
+  const handleUpdateCatalog=async ({id,name,coverUrl})=>{
+    const updates={name,cover_url:coverUrl||null};
+    if(isCloud){
+      const {error}=await supabase.from("crm_catalogs").update(updates).eq("id",id);
+      if(error){
+        // If cover_url column missing, retry with only name
+        if(error.message&&error.message.includes("cover_url")){
+          await supabase.from("crm_catalogs").update({name}).eq("id",id);
+          setCatalogs(prev=>prev.map(c=>c.id===id?{...c,name}:c));
+          toast("Saved (add cover_url column in Supabase to store cover images).");
+          return;
+        }
+        toast("Failed to save.");return;
+      }
+    }
+    setCatalogs(prev=>prev.map(c=>c.id===id?{...c,name,cover_url:coverUrl||null}:c));
+    toast("Catalog updated.");
   };
 
   const handleDeleteUser=async username=>{
@@ -1942,7 +2001,9 @@ export default function App() {
                       <div key={c.id} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:16,padding:20,display:"flex",flexDirection:"column",gap:12,cursor:"pointer"}}
                         onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 20px #0000000e"}
                         onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
-                        <PdfThumbnail url={c.url} size={130}/>
+                        {c.cover_url
+                          ?<img src={c.cover_url} alt="cover" style={{width:"100%",height:130,objectFit:"cover",borderRadius:8,display:"block"}}/>
+                          :<PdfThumbnail url={c.url} size={130}/>}
                         <div style={{fontWeight:600,fontSize:15,color:C.text,textAlign:"center"}}>{c.name}</div>
                         <button onClick={()=>window.open(c.url,"_blank")} style={{background:C.text,color:C.white,border:"none",borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,fontWeight:600,cursor:"pointer"}}>View Catalog</button>
                       </div>
@@ -2172,7 +2233,7 @@ export default function App() {
           </>);
         })()}
 
-        {view==="list"&&adminSection==="catalogs"&&<AdminCatalogSection catalogs={catalogs} onAdd={handleAddCatalog} onDelete={handleDeleteCatalog} onView={setCatalogViewing}/>}
+        {view==="list"&&adminSection==="catalogs"&&<AdminCatalogSection catalogs={catalogs} onAdd={handleAddCatalog} onDelete={handleDeleteCatalog} onEdit={handleUpdateCatalog} onView={setCatalogViewing}/>}
 
         {view==="list"&&adminSection==="orders"&&(<>
 
