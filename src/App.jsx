@@ -2045,7 +2045,7 @@ export default function App() {
                           ?<img src={c.cover_url} alt="cover" style={{width:"100%",height:130,objectFit:"cover",borderRadius:8,display:"block"}}/>
                           :<PdfThumbnail url={c.url} size={130}/>}
                         <div style={{fontWeight:600,fontSize:15,color:C.text,textAlign:"center"}}>{c.name}</div>
-                        <button onClick={()=>setCatalogViewing(c)} style={{background:C.text,color:C.white,border:"none",borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,fontWeight:600,cursor:"pointer"}}>View Catalog</button>
+                        <a href={c.url} target="_self" style={{display:"block",background:C.text,color:C.white,border:"none",borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,fontWeight:600,cursor:"pointer",textAlign:"center",textDecoration:"none"}}>View Catalog</a>
                       </div>
                     ))}
                   </div>
