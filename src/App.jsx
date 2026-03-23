@@ -1487,6 +1487,9 @@ export default function App() {
     setTimeout(()=>setToasts(p=>p.filter(t=>t.id!==id)),300);
   },[]);
 
+  // Scroll to top on every view/section change so pages always start from the top
+  useEffect(()=>{ window.scrollTo(0,0); },[view,customerSection,adminSection]);
+
   const toast=useCallback((msg,type="success")=>{
     const id=Date.now();
     setToasts(p=>[...p,{id,msg,type,exiting:false}]);
