@@ -2008,10 +2008,9 @@ export default function App() {
           </div>
         )}
 
-        <Nav title={customerSection==="catalogs"?"Catalogs":"My Orders"} sub={currentUser.name} right={
+        <Nav title="My Orders" sub={currentUser.name} right={
           <div style={{display:"flex",width:"100%",alignItems:"center"}}>
             {view==="list"&&customerSection==="orders"&&<PrimaryBtn onClick={()=>setView("new")} style={{padding:"8px 18px",fontSize:14}}>+ New Order</PrimaryBtn>}
-            {view==="list"&&customerSection==="catalogs"&&<GhostBtn onClick={()=>setCustomerSection("orders")} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>← Back</GhostBtn>}
             {view!=="list"&&<GhostBtn onClick={()=>setView("list")} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>← Back</GhostBtn>}
             <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:4}}>
               <GhostBtn onClick={()=>{setShowChangePw(true);setCpOld("");setCpNew("");setCpConfirm("");setCpErr("");}} style={{padding:"8px 10px",fontSize:14,color:C.sub}}>🔑</GhostBtn>
@@ -2021,6 +2020,13 @@ export default function App() {
         } avatar={<Avatar logo={profile.logo} name={currentUser.name} size={40}/>}/>
 
         <Wrap>
+
+          {view==="list"&&(
+            <div style={{display:"flex",gap:8,marginBottom:20}}>
+              <PillBtn active={customerSection==="orders"} onClick={()=>setCustomerSection("orders")}>My Orders</PillBtn>
+              {catalogs.length>0&&<PillBtn active={customerSection==="catalogs"} onClick={()=>setCustomerSection("catalogs")}>Catalogs</PillBtn>}
+            </div>
+          )}
 
           {view==="list"&&customerSection==="catalogs"&&(
             <div>
@@ -2048,11 +2054,6 @@ export default function App() {
           )}
 
           {view==="list"&&customerSection==="orders"&&(<>
-
-            <div style={{display:"flex",gap:8,marginBottom:20}}>
-              <PillBtn active={customerSection==="orders"} onClick={()=>setCustomerSection("orders")}>My Orders</PillBtn>
-              {catalogs.length>0&&<PillBtn active={false} onClick={()=>setCustomerSection("catalogs")}>📚 Catalogs</PillBtn>}
-            </div>
 
             <ProfileCard profile={profile} name={currentUser.name} onSave={data=>handleSaveProfile(currentUser.username,data)}/>
 
