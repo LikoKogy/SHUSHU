@@ -28,6 +28,10 @@ function normalizePdfUrl(url){
   return url;
 }
 
+function pdfViewerUrl(url){
+  return `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
+}
+
 const LOGO_PLACEMENTS = ["Front Left Chest","Front Center","Back Center","Back Neck","Left Sleeve","Right Sleeve","Bottom Hem"];
 
 const BRAND_FILES = ["Logo Design","Neck Label","Washing / Care Label","Hang Tag","Packaging / Bag","Front Print","Back Print"];
@@ -1950,7 +1954,7 @@ export default function App() {
                 <div style={{fontWeight:600,fontSize:16}}>{catalogViewing.name}</div>
                 <button onClick={()=>setCatalogViewing(null)} style={{background:"transparent",border:"none",color:C.white,fontSize:22,cursor:"pointer",lineHeight:1}}>✕</button>
               </div>
-              <iframe src={catalogViewing.url} style={{flex:1,border:"none",width:"100%"}} title={catalogViewing.name} onClick={e=>e.stopPropagation()}/>
+              <iframe src={pdfViewerUrl(catalogViewing.url)} style={{flex:1,border:"none",width:"100%"}} title={catalogViewing.name} onClick={e=>e.stopPropagation()}/>
             </div>
           )}
 
@@ -2305,7 +2309,7 @@ export default function App() {
             <div style={{fontWeight:600,fontSize:16}}>{catalogViewing.name}</div>
             <button onClick={()=>setCatalogViewing(null)} style={{background:"transparent",border:"none",color:C.white,fontSize:22,cursor:"pointer",lineHeight:1}}>✕</button>
           </div>
-          <iframe src={catalogViewing.url} style={{flex:1,border:"none",width:"100%"}} title={catalogViewing.name} onClick={e=>e.stopPropagation()}/>
+          <iframe src={pdfViewerUrl(catalogViewing.url)} style={{flex:1,border:"none",width:"100%"}} title={catalogViewing.name} onClick={e=>e.stopPropagation()}/>
         </div>
       )}
 
