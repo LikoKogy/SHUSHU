@@ -1260,6 +1260,7 @@ function PdfThumbnail({url,size=120}){
 function AdminCatalogSection({catalogs,onAdd,onDelete,onView}){
   const [name,setName]=useState("");
   const [url,setUrl]=useState("");
+  const [coverUrl,setCoverUrl]=useState("");
   const [file,setFile]=useState(null);
   const [adding,setAdding]=useState(false);
   const [loading,setLoading]=useState(false);
@@ -1269,8 +1270,8 @@ function AdminCatalogSection({catalogs,onAdd,onDelete,onView}){
     if(!name.trim()){return;}
     if(!url.trim()&&!file){return;}
     setLoading(true);
-    await onAdd({name:name.trim(),url:url.trim(),file});
-    setName("");setUrl("");setFile(null);setAdding(false);
+    await onAdd({name:name.trim(),url:url.trim(),file,coverUrl:coverUrl.trim()});
+    setName("");setUrl("");setFile(null);setCoverUrl("");setAdding(false);
     setLoading(false);
   };
 
@@ -1301,8 +1302,13 @@ function AdminCatalogSection({catalogs,onAdd,onDelete,onView}){
                 {file?`📄 ${file.name}`:"Choose PDF file…"}
               </button>
             </div>
+            <div>
+              <div style={{fontSize:12,fontWeight:600,color:C.sub,marginBottom:6,textTransform:"uppercase",letterSpacing:.4}}>Cover Image URL <span style={{fontWeight:400,textTransform:"none",letterSpacing:0}}>(optional)</span></div>
+              <input value={coverUrl} onChange={e=>setCoverUrl(e.target.value)} placeholder="https://i.imgur.com/… or any image link" style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"10px 14px",fontFamily:font,fontSize:14,outline:"none"}}/>
+              <div style={{fontSize:12,color:C.sub,marginTop:4}}>Paste an image URL to use as the catalog cover instead of auto-generated thumbnail.</div>
+            </div>
             <div style={{display:"flex",gap:10,marginTop:4}}>
-              <button onClick={()=>{setAdding(false);setName("");setUrl("");setFile(null);}} style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,cursor:"pointer",color:C.sub}}>Cancel</button>
+              <button onClick={()=>{setAdding(false);setName("");setUrl("");setFile(null);setCoverUrl("");}} style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,cursor:"pointer",color:C.sub}}>Cancel</button>
               <button onClick={submit} disabled={loading||!name.trim()||(!url.trim()&&!file)} style={{flex:1,background:(!name.trim()||(!url.trim()&&!file))?C.bg3:C.text,color:(!name.trim()||(!url.trim()&&!file))?C.gray:C.white,border:"none",borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,fontWeight:600,cursor:loading?"wait":"pointer"}}>
                 {loading?"Saving…":"Save"}
               </button>
@@ -1322,7 +1328,9 @@ function AdminCatalogSection({catalogs,onAdd,onDelete,onView}){
         {catalogs.map(c=>(
           <div key={c.id} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:16,padding:20,display:"flex",flexDirection:"column",gap:12}}>
             <div style={{position:"relative"}}>
-              <PdfThumbnail url={c.url} size={120}/>
+              {c.cover_url
+                ?<img src={c.cover_url} alt="cover" style={{width:"100%",height:120,objectFit:"cover",borderRadius:8,display:"block"}}/>
+                :<PdfThumbnail url={c.url} size={120}/>}
               <button onClick={()=>onDelete(c.id)} style={{position:"absolute",top:6,right:6,background:"#ffffffcc",border:`1px solid ${C.red}50`,color:C.red,borderRadius:8,padding:"4px 10px",fontSize:12,cursor:"pointer",fontFamily:font}}>Delete</button>
             </div>
             <div style={{fontWeight:600,fontSize:15,color:C.text}}>{c.name}</div>
@@ -1534,7 +1542,7 @@ export default function App() {
 
   };
 
-  const handleAddCatalog=async ({name,url,file})=>{
+  const handleAddCatalog=async ({name,url,file,coverUrl})=>{
     let finalUrl=url||"";
     if(file&&isCloud){
       const path=`catalog_${Date.now()}_${file.name.replace(/\s/g,"_")}`;
@@ -1549,10 +1557,22 @@ export default function App() {
     }
     if(!finalUrl){toast("Please provide a URL or upload a file.");return;}
     const row={name:name||"Catalog",url:normalizePdfUrl(finalUrl),created_at:new Date().toISOString()};
+    if(coverUrl) row.cover_url=coverUrl;
     if(isCloud){
       const {data:ins,error:ie}=await supabase.from("crm_catalogs").insert(row).select().single();
-      if(ie){toast("Failed to save catalog.");return;}
-      setCatalogs(prev=>[ins,...prev]);
+      if(ie){
+        // If cover_url column doesn't exist yet, retry without it
+        if(ie.message&&ie.message.includes("cover_url")){
+          const {cover_url:_,...rowWithout}=row;
+          const {data:ins2,error:ie2}=await supabase.from("crm_catalogs").insert(rowWithout).select().single();
+          if(ie2){toast("Failed to save catalog.");return;}
+          setCatalogs(prev=>[ins2,...prev]);
+        } else {
+          toast("Failed to save catalog.");return;
+        }
+      } else {
+        setCatalogs(prev=>[ins,...prev]);
+      }
     } else {
       const fake={...row,id:Date.now()};
       setCatalogs(prev=>[fake,...prev]);
