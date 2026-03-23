@@ -1214,30 +1214,39 @@ function CustomerCard({username,u,prof,meta,userOrders,onToggleStar,onSaveNote,o
 
 // ── PDF Thumbnail ───────────────────────────────────────────────────────────
 
+async function renderPdfThumb(url,size){
+  const candidates=[
+    url,
+    `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  ];
+  for(const src of candidates){
+    try{
+      const loadingTask=pdfjsLib.getDocument({url:src,withCredentials:false});
+      const pdf=await loadingTask.promise;
+      const page=await pdf.getPage(1);
+      const viewport=page.getViewport({scale:1});
+      const scale=size/Math.max(viewport.width,viewport.height)*2;
+      const vp=page.getViewport({scale});
+      const canvas=document.createElement("canvas");
+      canvas.width=vp.width; canvas.height=vp.height;
+      const ctx=canvas.getContext("2d");
+      await page.render({canvasContext:ctx,viewport:vp}).promise;
+      return canvas.toDataURL("image/jpeg",0.85);
+    }catch(_){}
+  }
+  return null;
+}
+
 function PdfThumbnail({url,size=120}){
   const [thumb,setThumb]=useState(null);
   const [err,setErr]=useState(false);
   useEffect(()=>{
     if(!url)return;
     let cancelled=false;
-    (async()=>{
-      try{
-        const loadingTask=pdfjsLib.getDocument({url,withCredentials:false});
-        const pdf=await loadingTask.promise;
-        const page=await pdf.getPage(1);
-        const viewport=page.getViewport({scale:1});
-        const scale=size/Math.max(viewport.width,viewport.height)*2;
-        const vp=page.getViewport({scale});
-        const canvas=document.createElement("canvas");
-        canvas.width=vp.width;
-        canvas.height=vp.height;
-        const ctx=canvas.getContext("2d");
-        await page.render({canvasContext:ctx,viewport:vp}).promise;
-        if(!cancelled) setThumb(canvas.toDataURL("image/jpeg",0.8));
-      }catch(e){
-        if(!cancelled) setErr(true);
-      }
-    })();
+    renderPdfThumb(url,size).then(data=>{
+      if(cancelled)return;
+      if(data) setThumb(data); else setErr(true);
+    });
     return()=>{cancelled=true;};
   },[url]);
 
