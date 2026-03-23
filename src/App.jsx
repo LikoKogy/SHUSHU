@@ -1523,7 +1523,7 @@ export default function App() {
       const loadedOrders=await fetchOrders();
       setOrders(loadedOrders);
 
-      try{const s=localStorage.getItem("crm-session");if(s){const{portal:p,currentUser:cu,view:v,selectedId:sid}=JSON.parse(s);if(p&&cu){setPortal(p);setCurrentUser(cu);if(v)setView(v);if(sid&&loadedOrders){const o=loadedOrders.find(x=>x.id===sid);if(o)setSelected(o);}}}}catch(_){}
+      try{const s=localStorage.getItem("crm-session");if(s){const{portal:p,currentUser:cu,view:v,selectedId:sid,adminSection:as,customerSection:cs}=JSON.parse(s);if(p&&cu){setPortal(p);setCurrentUser(cu);if(v)setView(v);if(as)setAdminSection(as);if(cs)setCustomerSection(cs);if(sid&&loadedOrders){const o=loadedOrders.find(x=>x.id===sid);if(o)setSelected(o);}}}}catch(_){}
 
       setLoaded(true);
 
@@ -1788,10 +1788,10 @@ export default function App() {
     if(portal!=="home"&&currentUser){
       try{
         const s=JSON.parse(localStorage.getItem("crm-session")||"{}");
-        localStorage.setItem("crm-session",JSON.stringify({...s,view,selectedId:selected?.id||null}));
+        localStorage.setItem("crm-session",JSON.stringify({...s,view,selectedId:selected?.id||null,adminSection,customerSection}));
       }catch(_){}
     }
-  },[view,selected,portal,currentUser]);
+  },[view,selected,portal,currentUser,adminSection,customerSection]);
 
   const nextId=()=>(orders.length?Math.max(...orders.map(o=>o.id))+1:1);
 
