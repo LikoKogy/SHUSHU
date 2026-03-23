@@ -347,7 +347,7 @@ function UploadSlot({label, required, initial, onReady, showShareToggle, isShare
 
 // ── CatalogSlot ────────────────────────────────────────────────────────────
 
-function CatalogSlot({initial, onReady}) {
+function CatalogSlot({initial, onReady, onBrowseCatalog}) {
 
   const [fileName, setFileName] = useState(initial?.name||null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -430,6 +430,16 @@ function CatalogSlot({initial, onReady}) {
         </div>
 
       </label>
+
+      {!fileName&&!previewUrl&&onBrowseCatalog&&(
+        <button
+          type="button"
+          onClick={e=>{e.preventDefault();onBrowseCatalog();}}
+          style={{marginTop:8,display:"flex",alignItems:"center",gap:6,background:"transparent",border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:font,fontSize:13,color:C.sub,fontWeight:500,width:"100%",justifyContent:"center"}}
+        >
+          Don't have a screenshot? Browse Catalog →
+        </button>
+      )}
 
     </div>
 
@@ -778,7 +788,7 @@ function ProfileCard({profile,name,onSave}) {
 
 // ── Order Form ─────────────────────────────────────────────────────────────
 
-function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
+function OrderForm({initial, onSave, onCancel, editMode, orderId, onBrowseCatalog}) {
 
   const initItems = (initial?.items||[emptyItem()]).map(it=>({...emptyItem(),...it,brandingFiles:normBF(it.brandingFiles)}));
 
@@ -946,7 +956,7 @@ function OrderForm({initial, onSave, onCancel, editMode, orderId}) {
 
             </div>
 
-            <CatalogSlot initial={it.catalogImage} onReady={f=>queueFile(i,"__catalog__",f)}/>
+            <CatalogSlot initial={it.catalogImage} onReady={f=>queueFile(i,"__catalog__",f)} onBrowseCatalog={onBrowseCatalog?()=>onBrowseCatalog({items,notes,sharedToggles,sharedNotesOn,sharedNotes}):undefined}/>
 
             <div className="two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
 
@@ -1435,6 +1445,8 @@ export default function App() {
   const [catalogs,setCatalogs]=useState([]);
   const [catalogViewing,setCatalogViewing]=useState(null);
   const [customerSection,setCustomerSection]=useState("orders");
+
+  const [orderDraft,setOrderDraft]=useState(null); // preserves form state while browsing catalog
 
   const [view,setView]=useState("list");
 
@@ -2021,6 +2033,25 @@ export default function App() {
 
         <Wrap>
 
+          {orderDraft&&(
+            <div style={{background:C.text,color:C.white,borderRadius:12,padding:"13px 16px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+              <div>
+                <div style={{fontWeight:600,fontSize:14}}>Browsing the catalog</div>
+                <div style={{fontSize:12,opacity:.7,marginTop:2}}>Screenshot the item you want, then tap "Back to Order"</div>
+              </div>
+              <button
+                onClick={()=>{
+                  const d=orderDraft;
+                  setOrderDraft(null);
+                  if(d.returnView==="edit"&&d.returnSelected) setSelected(d.returnSelected);
+                  setCustomerSection("orders");
+                  setView(d.returnView);
+                }}
+                style={{background:C.white,color:C.text,border:"none",borderRadius:8,padding:"8px 14px",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:font,whiteSpace:"nowrap",flexShrink:0}}
+              >← Back to Order</button>
+            </div>
+          )}
+
           {view==="list"&&(
             <div style={{display:"flex",gap:8,marginBottom:20}}>
               <PillBtn active={customerSection==="orders"} onClick={()=>setCustomerSection("orders")}>My Orders</PillBtn>
@@ -2110,7 +2141,13 @@ export default function App() {
           </>)}
 
 
-          {view==="new"&&<div style={{maxWidth:700,margin:"0 auto"}}><div style={{fontSize:26,fontWeight:700,letterSpacing:-.3,marginBottom:28}}>New Order</div><OrderForm onSave={handleSaveNew} onCancel={()=>setView("list")} editMode={false}/></div>}
+          {view==="new"&&<div style={{maxWidth:700,margin:"0 auto"}}><div style={{fontSize:26,fontWeight:700,letterSpacing:-.3,marginBottom:28}}>New Order</div><OrderForm
+            initial={orderDraft?.returnView==="new"?{items:orderDraft.items,notes:orderDraft.notes,sharedBrandingFiles:orderDraft.sharedToggles}:undefined}
+            onSave={d=>{setOrderDraft(null);handleSaveNew(d);}}
+            onCancel={()=>{setOrderDraft(null);setView("list");}}
+            editMode={false}
+            onBrowseCatalog={catalogs.length>0?(draft)=>{setOrderDraft({...draft,returnView:"new"});setCustomerSection("catalogs");setView("list");}:undefined}
+          /></div>}
 
           {view==="detail"&&selected&&(()=>{
 
@@ -2171,7 +2208,14 @@ export default function App() {
 
           })()}
 
-          {view==="edit"&&selected&&<div style={{maxWidth:700,margin:"0 auto"}}><div style={{fontSize:26,fontWeight:700,letterSpacing:-.3,marginBottom:28}}>Edit Order</div><OrderForm initial={selected} orderId={selected.id} onSave={handleSaveEdit} onCancel={()=>setView("detail")} editMode={true}/></div>}
+          {view==="edit"&&selected&&<div style={{maxWidth:700,margin:"0 auto"}}><div style={{fontSize:26,fontWeight:700,letterSpacing:-.3,marginBottom:28}}>Edit Order</div><OrderForm
+            initial={orderDraft?.returnView==="edit"?{...selected,items:orderDraft.items,notes:orderDraft.notes,sharedBrandingFiles:orderDraft.sharedToggles}:selected}
+            orderId={selected.id}
+            onSave={d=>{setOrderDraft(null);handleSaveEdit(d);}}
+            onCancel={()=>{setOrderDraft(null);setView("detail");}}
+            editMode={true}
+            onBrowseCatalog={catalogs.length>0?(draft)=>{setOrderDraft({...draft,returnView:"edit",returnSelected:selected});setCustomerSection("catalogs");setView("list");}:undefined}
+          /></div>}
 
         </Wrap>
 
