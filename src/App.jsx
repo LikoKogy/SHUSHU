@@ -1,4 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import * as pdfjsLib from "pdfjs-dist";
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).href;
 import "./App.css";
 import { supabase, isCloud } from "./supabase.js";
 import { downloadExcel, downloadZip } from "./exportOrder.js";
@@ -1210,6 +1212,40 @@ function CustomerCard({username,u,prof,meta,userOrders,onToggleStar,onSaveNote,o
   );
 }
 
+// ── PDF Thumbnail ───────────────────────────────────────────────────────────
+
+function PdfThumbnail({url,size=120}){
+  const [thumb,setThumb]=useState(null);
+  const [err,setErr]=useState(false);
+  useEffect(()=>{
+    if(!url)return;
+    let cancelled=false;
+    (async()=>{
+      try{
+        const loadingTask=pdfjsLib.getDocument({url,withCredentials:false});
+        const pdf=await loadingTask.promise;
+        const page=await pdf.getPage(1);
+        const viewport=page.getViewport({scale:1});
+        const scale=size/Math.max(viewport.width,viewport.height)*2;
+        const vp=page.getViewport({scale});
+        const canvas=document.createElement("canvas");
+        canvas.width=vp.width;
+        canvas.height=vp.height;
+        const ctx=canvas.getContext("2d");
+        await page.render({canvasContext:ctx,viewport:vp}).promise;
+        if(!cancelled) setThumb(canvas.toDataURL("image/jpeg",0.8));
+      }catch(e){
+        if(!cancelled) setErr(true);
+      }
+    })();
+    return()=>{cancelled=true;};
+  },[url]);
+
+  if(thumb) return <img src={thumb} alt="cover" style={{width:"100%",height:size,objectFit:"cover",borderRadius:8,display:"block"}}/>;
+  if(err)   return <div style={{fontSize:40,textAlign:"center",paddingTop:8}}>📄</div>;
+  return <div style={{width:"100%",height:size,borderRadius:8,background:C.border,display:"flex",alignItems:"center",justifyContent:"center",color:C.sub,fontSize:12}}>Loading…</div>;
+}
+
 // ── Main App ───────────────────────────────────────────────────────────────
 
 function AdminCatalogSection({catalogs,onAdd,onDelete,onView}){
@@ -1276,9 +1312,9 @@ function AdminCatalogSection({catalogs,onAdd,onDelete,onView}){
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:14}}>
         {catalogs.map(c=>(
           <div key={c.id} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:16,padding:20,display:"flex",flexDirection:"column",gap:12}}>
-            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
-              <div style={{fontSize:40}}>📄</div>
-              <button onClick={()=>onDelete(c.id)} style={{background:"transparent",border:`1px solid ${C.red}30`,color:C.red,borderRadius:8,padding:"5px 11px",fontSize:13,cursor:"pointer",fontFamily:font,flexShrink:0}}>Delete</button>
+            <div style={{position:"relative"}}>
+              <PdfThumbnail url={c.url} size={120}/>
+              <button onClick={()=>onDelete(c.id)} style={{position:"absolute",top:6,right:6,background:"#ffffffcc",border:`1px solid ${C.red}50`,color:C.red,borderRadius:8,padding:"4px 10px",fontSize:12,cursor:"pointer",fontFamily:font}}>Delete</button>
             </div>
             <div style={{fontWeight:600,fontSize:15,color:C.text}}>{c.name}</div>
             <div style={{fontSize:12,color:C.sub,wordBreak:"break-all"}}>{c.url.length>50?c.url.slice(0,50)+"…":c.url}</div>
@@ -1877,7 +1913,7 @@ export default function App() {
                       <div key={c.id} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:16,padding:20,display:"flex",flexDirection:"column",gap:12,cursor:"pointer"}}
                         onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 20px #0000000e"}
                         onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
-                        <div style={{fontSize:48,textAlign:"center",paddingTop:8}}>📄</div>
+                        <PdfThumbnail url={c.url} size={130}/>
                         <div style={{fontWeight:600,fontSize:15,color:C.text,textAlign:"center"}}>{c.name}</div>
                         <button onClick={()=>window.open(c.url,"_blank")} style={{background:C.text,color:C.white,border:"none",borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,fontWeight:600,cursor:"pointer"}}>View Catalog</button>
                       </div>
