@@ -19,6 +19,15 @@ const font = "-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-ser
 
 const SIZES = ["XS","S","M","L","XL","2XL","3XL"];
 
+function normalizePdfUrl(url){
+  if(!url) return url;
+  if(url.includes("dropbox.com")){
+    url=url.replace(/[?&]dl=\d/,m=>m.replace(/dl=\d/,"raw=1"));
+    if(!url.includes("raw=1")) url+=(url.includes("?")?"&":"?")+"raw=1";
+  }
+  return url;
+}
+
 const LOGO_PLACEMENTS = ["Front Left Chest","Front Center","Back Center","Back Neck","Left Sleeve","Right Sleeve","Bottom Hem"];
 
 const BRAND_FILES = ["Logo Design","Neck Label","Washing / Care Label","Hang Tag","Packaging / Bag","Front Print","Back Print"];
@@ -1199,6 +1208,84 @@ function CustomerCard({username,u,prof,meta,userOrders,onToggleStar,onSaveNote,o
 
 // ── Main App ───────────────────────────────────────────────────────────────
 
+function AdminCatalogSection({catalogs,onAdd,onDelete,onView}){
+  const [name,setName]=useState("");
+  const [url,setUrl]=useState("");
+  const [file,setFile]=useState(null);
+  const [adding,setAdding]=useState(false);
+  const [loading,setLoading]=useState(false);
+  const fileRef=useRef();
+
+  const submit=async()=>{
+    if(!name.trim()){return;}
+    if(!url.trim()&&!file){return;}
+    setLoading(true);
+    await onAdd({name:name.trim(),url:url.trim(),file});
+    setName("");setUrl("");setFile(null);setAdding(false);
+    setLoading(false);
+  };
+
+  return(
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <div style={{fontSize:20,fontWeight:700,color:C.text}}>Catalogs</div>
+        {!adding&&<PrimaryBtn onClick={()=>setAdding(true)} style={{padding:"8px 18px",fontSize:14}}>+ Add Catalog</PrimaryBtn>}
+      </div>
+
+      {adding&&(
+        <div style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:16,padding:20,marginBottom:20}}>
+          <div style={{fontSize:15,fontWeight:600,marginBottom:16,color:C.text}}>New Catalog</div>
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            <div>
+              <div style={{fontSize:12,fontWeight:600,color:C.sub,marginBottom:6,textTransform:"uppercase",letterSpacing:.4}}>Name</div>
+              <input value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Spring 2026 Collection" style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"10px 14px",fontFamily:font,fontSize:14,outline:"none"}}/>
+            </div>
+            <div>
+              <div style={{fontSize:12,fontWeight:600,color:C.sub,marginBottom:6,textTransform:"uppercase",letterSpacing:.4}}>Dropbox / External URL</div>
+              <input value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://www.dropbox.com/s/…" style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"10px 14px",fontFamily:font,fontSize:14,outline:"none"}}/>
+              <div style={{fontSize:12,color:C.sub,marginTop:4}}>Dropbox links are automatically made viewable.</div>
+            </div>
+            <div>
+              <div style={{fontSize:12,fontWeight:600,color:C.sub,marginBottom:6,textTransform:"uppercase",letterSpacing:.4}}>Or Upload PDF</div>
+              <input ref={fileRef} type="file" accept="application/pdf" style={{display:"none"}} onChange={e=>setFile(e.target.files[0]||null)}/>
+              <button onClick={()=>fileRef.current.click()} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 14px",fontFamily:font,fontSize:14,cursor:"pointer",color:file?C.text:C.sub,width:"100%",textAlign:"left"}}>
+                {file?`📄 ${file.name}`:"Choose PDF file…"}
+              </button>
+            </div>
+            <div style={{display:"flex",gap:10,marginTop:4}}>
+              <button onClick={()=>{setAdding(false);setName("");setUrl("");setFile(null);}} style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,cursor:"pointer",color:C.sub}}>Cancel</button>
+              <button onClick={submit} disabled={loading||!name.trim()||(!url.trim()&&!file)} style={{flex:1,background:(!name.trim()||(!url.trim()&&!file))?C.bg3:C.text,color:(!name.trim()||(!url.trim()&&!file))?C.gray:C.white,border:"none",borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,fontWeight:600,cursor:loading?"wait":"pointer"}}>
+                {loading?"Saving…":"Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {catalogs.length===0&&!adding&&(
+        <div style={{textAlign:"center",padding:"60px 0",color:C.sub,fontSize:15}}>
+          <div style={{fontSize:40,marginBottom:12}}>📚</div>
+          No catalogs yet. Add one above.
+        </div>
+      )}
+
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:14}}>
+        {catalogs.map(c=>(
+          <div key={c.id} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:16,padding:20,display:"flex",flexDirection:"column",gap:12}}>
+            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:8}}>
+              <div style={{fontSize:40}}>📄</div>
+              <button onClick={()=>onDelete(c.id)} style={{background:"transparent",border:`1px solid ${C.red}30`,color:C.red,borderRadius:8,padding:"5px 11px",fontSize:13,cursor:"pointer",fontFamily:font,flexShrink:0}}>Delete</button>
+            </div>
+            <div style={{fontWeight:600,fontSize:15,color:C.text}}>{c.name}</div>
+            <div style={{fontSize:12,color:C.sub,wordBreak:"break-all"}}>{c.url.length>50?c.url.slice(0,50)+"…":c.url}</div>
+            <button onClick={()=>onView(c)} style={{background:C.text,color:C.white,border:"none",borderRadius:10,padding:"9px",fontFamily:font,fontSize:14,fontWeight:600,cursor:"pointer"}}>View PDF</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
 
   const [portal,setPortal]=useState("home");
@@ -1226,6 +1313,10 @@ export default function App() {
   const [deleteTarget,setDeleteTarget]=useState(null);
 
   const [zipLoading,setZipLoading]=useState(false);
+
+  const [catalogs,setCatalogs]=useState([]);
+  const [catalogViewing,setCatalogViewing]=useState(null);
+  const [customerSection,setCustomerSection]=useState("orders");
 
   const [view,setView]=useState("list");
 
@@ -1299,6 +1390,9 @@ export default function App() {
         const { data: md } = await supabase.from("crm_admin_meta").select();
 
         if (md) setAdminMeta(Object.fromEntries(md.map(r=>[r.username,{starred:r.starred||false,adminNote:r.admin_note||""}])));
+
+        const { data: catd } = await supabase.from("crm_catalogs").select().order("created_at",{ascending:false});
+        if(catd) setCatalogs(catd);
 
       } else {
 
@@ -1389,6 +1483,38 @@ export default function App() {
 
     toast("Note saved.");
 
+  };
+
+  const handleAddCatalog=async ({name,url,file})=>{
+    let finalUrl=url||"";
+    if(file&&isCloud){
+      const path=`catalog_${Date.now()}_${file.name.replace(/\s/g,"_")}`;
+      const {error}=await supabase.storage.from("crm-files").upload(path,file,{upsert:true});
+      if(error){toast("Upload failed: "+error.message);return;}
+      const {data:sd}=supabase.storage.from("crm-files").getPublicUrl(path);
+      finalUrl=sd?.publicUrl||"";
+      if(!finalUrl){
+        const {data:signed}=await supabase.storage.from("crm-files").createSignedUrl(path,60*60*24*365);
+        finalUrl=signed?.signedUrl||"";
+      }
+    }
+    if(!finalUrl){toast("Please provide a URL or upload a file.");return;}
+    const row={name:name||"Catalog",url:normalizePdfUrl(finalUrl),created_at:new Date().toISOString()};
+    if(isCloud){
+      const {data:ins,error:ie}=await supabase.from("crm_catalogs").insert(row).select().single();
+      if(ie){toast("Failed to save catalog.");return;}
+      setCatalogs(prev=>[ins,...prev]);
+    } else {
+      const fake={...row,id:Date.now()};
+      setCatalogs(prev=>[fake,...prev]);
+    }
+    toast("Catalog added.");
+  };
+
+  const handleDeleteCatalog=async id=>{
+    if(isCloud) await supabase.from("crm_catalogs").delete().eq("id",id);
+    setCatalogs(prev=>prev.filter(c=>c.id!==id));
+    toast("Catalog deleted.");
   };
 
   const handleDeleteUser=async username=>{
@@ -1720,9 +1846,10 @@ export default function App() {
           </div>
         )}
 
-        <Nav title="My Orders" sub={currentUser.name} right={
+        <Nav title={customerSection==="catalogs"?"Catalogs":"My Orders"} sub={currentUser.name} right={
           <div style={{display:"flex",width:"100%",alignItems:"center"}}>
-            {view==="list"&&<PrimaryBtn onClick={()=>setView("new")} style={{padding:"8px 18px",fontSize:14}}>+ New Order</PrimaryBtn>}
+            {view==="list"&&customerSection==="orders"&&<PrimaryBtn onClick={()=>setView("new")} style={{padding:"8px 18px",fontSize:14}}>+ New Order</PrimaryBtn>}
+            {view==="list"&&customerSection==="catalogs"&&<GhostBtn onClick={()=>setCustomerSection("orders")} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>← Back</GhostBtn>}
             {view!=="list"&&<GhostBtn onClick={()=>setView("list")} style={{padding:"8px 14px",fontSize:14,color:C.sub}}>← Back</GhostBtn>}
             <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:4}}>
               <GhostBtn onClick={()=>{setShowChangePw(true);setCpOld("");setCpNew("");setCpConfirm("");setCpErr("");}} style={{padding:"8px 10px",fontSize:14,color:C.sub}}>🔑</GhostBtn>
@@ -1733,7 +1860,35 @@ export default function App() {
 
         <Wrap>
 
-          {view==="list"&&(<>
+          {view==="list"&&customerSection==="catalogs"&&(
+            <div>
+              {catalogs.length===0
+                ?<div style={{textAlign:"center",padding:"60px 0",color:C.sub}}>
+                    <div style={{fontSize:48,marginBottom:12}}>📚</div>
+                    <div style={{fontSize:18,fontWeight:600,color:C.text,marginBottom:6}}>No catalogs yet</div>
+                    <div style={{fontSize:14}}>Check back soon.</div>
+                  </div>
+                :<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:14}}>
+                    {catalogs.map(c=>(
+                      <div key={c.id} style={{background:C.bg,border:`1px solid ${C.border}`,borderRadius:16,padding:20,display:"flex",flexDirection:"column",gap:12,cursor:"pointer"}}
+                        onMouseEnter={e=>e.currentTarget.style.boxShadow="0 4px 20px #0000000e"}
+                        onMouseLeave={e=>e.currentTarget.style.boxShadow="none"}>
+                        <div style={{fontSize:48,textAlign:"center",paddingTop:8}}>📄</div>
+                        <div style={{fontWeight:600,fontSize:15,color:C.text,textAlign:"center"}}>{c.name}</div>
+                        <button onClick={()=>setCatalogViewing(c)} style={{background:C.text,color:C.white,border:"none",borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,fontWeight:600,cursor:"pointer"}}>View Catalog</button>
+                      </div>
+                    ))}
+                  </div>
+              }
+            </div>
+          )}
+
+          {view==="list"&&customerSection==="orders"&&(<>
+
+            <div style={{display:"flex",gap:8,marginBottom:20}}>
+              <PillBtn active={customerSection==="orders"} onClick={()=>setCustomerSection("orders")}>My Orders</PillBtn>
+              {catalogs.length>0&&<PillBtn active={false} onClick={()=>setCustomerSection("catalogs")}>📚 Catalogs</PillBtn>}
+            </div>
 
             <ProfileCard profile={profile} name={currentUser.name} onSave={data=>handleSaveProfile(currentUser.username,data)}/>
 
@@ -1788,6 +1943,16 @@ export default function App() {
             }
 
           </>)}
+
+          {catalogViewing&&(
+            <div style={{position:"fixed",inset:0,background:"#000c",zIndex:1000,display:"flex",flexDirection:"column"}} onClick={()=>setCatalogViewing(null)}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 20px",background:C.text,color:C.white}} onClick={e=>e.stopPropagation()}>
+                <div style={{fontWeight:600,fontSize:16}}>{catalogViewing.name}</div>
+                <button onClick={()=>setCatalogViewing(null)} style={{background:"transparent",border:"none",color:C.white,fontSize:22,cursor:"pointer",lineHeight:1}}>✕</button>
+              </div>
+              <iframe src={catalogViewing.url} style={{flex:1,border:"none",width:"100%"}} title={catalogViewing.name} onClick={e=>e.stopPropagation()}/>
+            </div>
+          )}
 
           {view==="new"&&<div style={{maxWidth:700,margin:"0 auto"}}><div style={{fontSize:26,fontWeight:700,letterSpacing:-.3,marginBottom:28}}>New Order</div><OrderForm onSave={handleSaveNew} onCancel={()=>setView("list")} editMode={false}/></div>}
 
@@ -1915,6 +2080,7 @@ export default function App() {
         {view==="list"&&<div style={{display:"flex",gap:8,marginBottom:24}}>
           <PillBtn active={adminSection==="orders"} onClick={()=>setAdminSection("orders")}>Orders</PillBtn>
           <PillBtn active={adminSection==="customers"} onClick={()=>setAdminSection("customers")}>Customers ({Object.keys(users).length})</PillBtn>
+          <PillBtn active={adminSection==="catalogs"} onClick={()=>setAdminSection("catalogs")}>Catalogs ({catalogs.length})</PillBtn>
         </div>}
 
         {view==="list"&&adminSection==="customers"&&(()=>{
@@ -1945,6 +2111,8 @@ export default function App() {
             </div>
           </>);
         })()}
+
+        {view==="list"&&adminSection==="catalogs"&&<AdminCatalogSection catalogs={catalogs} onAdd={handleAddCatalog} onDelete={handleDeleteCatalog} onView={setCatalogViewing}/>}
 
         {view==="list"&&adminSection==="orders"&&(<>
 
@@ -2130,6 +2298,16 @@ export default function App() {
       {deleteTarget&&<Modal onClose={()=>setDeleteTarget(null)}><div style={{fontSize:18,fontWeight:700,marginBottom:8}}>Delete this order?</div><div style={{color:C.sub,fontSize:14,marginBottom:24}}>Order #{deleteTarget.id} from <strong>{deleteTarget.ownerName}</strong> will be permanently removed.</div><div style={{display:"flex",gap:10}}><GhostBtn onClick={()=>setDeleteTarget(null)} style={{flex:1,color:C.sub}}>Cancel</GhostBtn><button onClick={()=>handleDelete(deleteTarget.id)} style={{flex:1,background:C.red,color:C.white,border:"none",borderRadius:10,padding:"11px",cursor:"pointer",fontFamily:font,fontWeight:600,fontSize:15}}>Delete</button></div></Modal>}
 
       {deleteUserTarget&&<Modal onClose={()=>setDeleteUserTarget(null)}><div style={{fontSize:18,fontWeight:700,marginBottom:8}}>Delete customer?</div><div style={{color:C.sub,fontSize:14,marginBottom:24}}><strong>{users[deleteUserTarget]?.name}</strong> (@{deleteUserTarget}) and all their orders will be permanently removed.</div><div style={{display:"flex",gap:10}}><GhostBtn onClick={()=>setDeleteUserTarget(null)} style={{flex:1,color:C.sub}}>Cancel</GhostBtn><button onClick={()=>handleDeleteUser(deleteUserTarget)} style={{flex:1,background:C.red,color:C.white,border:"none",borderRadius:10,padding:"11px",cursor:"pointer",fontFamily:font,fontWeight:600,fontSize:15}}>Delete</button></div></Modal>}
+
+      {catalogViewing&&(
+        <div style={{position:"fixed",inset:0,background:"#000c",zIndex:1000,display:"flex",flexDirection:"column"}} onClick={()=>setCatalogViewing(null)}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 20px",background:C.text,color:C.white}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontWeight:600,fontSize:16}}>{catalogViewing.name}</div>
+            <button onClick={()=>setCatalogViewing(null)} style={{background:"transparent",border:"none",color:C.white,fontSize:22,cursor:"pointer",lineHeight:1}}>✕</button>
+          </div>
+          <iframe src={catalogViewing.url} style={{flex:1,border:"none",width:"100%"}} title={catalogViewing.name} onClick={e=>e.stopPropagation()}/>
+        </div>
+      )}
 
       <Toast toasts={toasts} onDismiss={dismissToast}/>
 
