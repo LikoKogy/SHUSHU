@@ -1260,24 +1260,35 @@ function PdfThumbnail({url,size=120}){
 function AdminCatalogSection({catalogs,onAdd,onDelete,onEdit,onView}){
   const [name,setName]=useState("");
   const [url,setUrl]=useState("");
-  const [coverUrl,setCoverUrl]=useState("");
+  const [coverFile,setCoverFile]=useState(null);
+  const [coverPreview,setCoverPreview]=useState(null);
   const [file,setFile]=useState(null);
   const [adding,setAdding]=useState(false);
   const [loading,setLoading]=useState(false);
   const fileRef=useRef();
+  const coverRef=useRef();
+
+  const pickCover=(e,setFile,setPreview)=>{
+    const f=e.target.files[0]||null;
+    setFile(f);
+    if(f){const r=new FileReader();r.onload=ev=>setPreview(ev.target.result);r.readAsDataURL(f);}
+    else setPreview(null);
+  };
 
   // inline edit state
   const [editingId,setEditingId]=useState(null);
   const [editName,setEditName]=useState("");
-  const [editCover,setEditCover]=useState("");
+  const [editCoverFile,setEditCoverFile]=useState(null);
+  const [editCoverPreview,setEditCoverPreview]=useState(null);
   const [editSaving,setEditSaving]=useState(false);
+  const editCoverRef=useRef();
 
-  const startEdit=(c)=>{setEditingId(c.id);setEditName(c.name);setEditCover(c.cover_url||"");};
-  const cancelEdit=()=>{setEditingId(null);};
+  const startEdit=(c)=>{setEditingId(c.id);setEditName(c.name);setEditCoverFile(null);setEditCoverPreview(c.cover_url||null);};
+  const cancelEdit=()=>{setEditingId(null);setEditCoverFile(null);setEditCoverPreview(null);};
   const saveEdit=async(id)=>{
     setEditSaving(true);
-    await onEdit({id,name:editName.trim(),coverUrl:editCover.trim()});
-    setEditingId(null);
+    await onEdit({id,name:editName.trim(),coverFile:editCoverFile});
+    setEditingId(null);setEditCoverFile(null);setEditCoverPreview(null);
     setEditSaving(false);
   };
 
@@ -1285,8 +1296,8 @@ function AdminCatalogSection({catalogs,onAdd,onDelete,onEdit,onView}){
     if(!name.trim()){return;}
     if(!url.trim()&&!file){return;}
     setLoading(true);
-    await onAdd({name:name.trim(),url:url.trim(),file,coverUrl:coverUrl.trim()});
-    setName("");setUrl("");setFile(null);setCoverUrl("");setAdding(false);
+    await onAdd({name:name.trim(),url:url.trim(),file,coverFile});
+    setName("");setUrl("");setFile(null);setCoverFile(null);setCoverPreview(null);setAdding(false);
     setLoading(false);
   };
 
@@ -1318,12 +1329,15 @@ function AdminCatalogSection({catalogs,onAdd,onDelete,onEdit,onView}){
               </button>
             </div>
             <div>
-              <div style={{fontSize:12,fontWeight:600,color:C.sub,marginBottom:6,textTransform:"uppercase",letterSpacing:.4}}>Cover Image URL <span style={{fontWeight:400,textTransform:"none",letterSpacing:0}}>(optional)</span></div>
-              <input value={coverUrl} onChange={e=>setCoverUrl(e.target.value)} placeholder="https://i.imgur.com/… or any image link" style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:10,padding:"10px 14px",fontFamily:font,fontSize:14,outline:"none"}}/>
-              <div style={{fontSize:12,color:C.sub,marginTop:4}}>Paste an image URL to use as the catalog cover instead of auto-generated thumbnail.</div>
+              <div style={{fontSize:12,fontWeight:600,color:C.sub,marginBottom:6,textTransform:"uppercase",letterSpacing:.4}}>Cover Image <span style={{fontWeight:400,textTransform:"none",letterSpacing:0}}>(optional)</span></div>
+              <input ref={coverRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>pickCover(e,setCoverFile,setCoverPreview)}/>
+              <button onClick={()=>coverRef.current.click()} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:10,padding:"10px 14px",fontFamily:font,fontSize:14,cursor:"pointer",color:coverFile?C.text:C.sub,width:"100%",textAlign:"left"}}>
+                {coverFile?`🖼 ${coverFile.name}`:"Choose cover image…"}
+              </button>
+              {coverPreview&&<img src={coverPreview} alt="preview" style={{width:"100%",height:110,objectFit:"cover",borderRadius:8,marginTop:8,border:`1px solid ${C.border}`}}/>}
             </div>
             <div style={{display:"flex",gap:10,marginTop:4}}>
-              <button onClick={()=>{setAdding(false);setName("");setUrl("");setFile(null);setCoverUrl("");}} style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,cursor:"pointer",color:C.sub}}>Cancel</button>
+              <button onClick={()=>{setAdding(false);setName("");setUrl("");setFile(null);setCoverFile(null);setCoverPreview(null);}} style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,cursor:"pointer",color:C.sub}}>Cancel</button>
               <button onClick={submit} disabled={loading||!name.trim()||(!url.trim()&&!file)} style={{flex:1,background:(!name.trim()||(!url.trim()&&!file))?C.bg3:C.text,color:(!name.trim()||(!url.trim()&&!file))?C.gray:C.white,border:"none",borderRadius:10,padding:"10px",fontFamily:font,fontSize:14,fontWeight:600,cursor:loading?"wait":"pointer"}}>
                 {loading?"Saving…":"Save"}
               </button>
@@ -1350,11 +1364,13 @@ function AdminCatalogSection({catalogs,onAdd,onDelete,onEdit,onView}){
                   <input value={editName} onChange={e=>setEditName(e.target.value)} style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:9,padding:"9px 12px",fontFamily:font,fontSize:14,outline:"none"}}/>
                 </div>
                 <div>
-                  <div style={{fontSize:11,fontWeight:600,color:C.sub,marginBottom:5,textTransform:"uppercase",letterSpacing:.4}}>Cover Image URL</div>
-                  <input value={editCover} onChange={e=>setEditCover(e.target.value)} placeholder="https://i.imgur.com/…" style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:9,padding:"9px 12px",fontFamily:font,fontSize:14,outline:"none"}}/>
-                  <div style={{fontSize:11,color:C.sub,marginTop:4}}>Paste any image URL to use as the cover photo.</div>
+                  <div style={{fontSize:11,fontWeight:600,color:C.sub,marginBottom:5,textTransform:"uppercase",letterSpacing:.4}}>Cover Image</div>
+                  <input ref={editCoverRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>pickCover(e,setEditCoverFile,setEditCoverPreview)}/>
+                  <button onClick={()=>editCoverRef.current.click()} style={{background:C.bg2,border:`1px solid ${C.border}`,borderRadius:9,padding:"9px 12px",fontFamily:font,fontSize:14,cursor:"pointer",color:editCoverFile?C.text:C.sub,width:"100%",textAlign:"left",boxSizing:"border-box"}}>
+                    {editCoverFile?`🖼 ${editCoverFile.name}`:"Choose cover image…"}
+                  </button>
                 </div>
-                {editCover&&<img src={editCover} alt="preview" style={{width:"100%",height:110,objectFit:"cover",borderRadius:8,border:`1px solid ${C.border}`}} onError={e=>{e.target.style.display="none";}}/>}
+                {editCoverPreview&&<img src={editCoverPreview} alt="preview" style={{width:"100%",height:110,objectFit:"cover",borderRadius:8,border:`1px solid ${C.border}`}} onError={e=>{e.target.style.display="none";}}/>}
                 <div style={{display:"flex",gap:8}}>
                   <button onClick={cancelEdit} style={{flex:1,background:"transparent",border:`1px solid ${C.border}`,borderRadius:9,padding:"9px",fontFamily:font,fontSize:13,cursor:"pointer",color:C.sub}}>Cancel</button>
                   <button onClick={()=>saveEdit(c.id)} disabled={editSaving||!editName.trim()} style={{flex:1,background:C.text,color:C.white,border:"none",borderRadius:9,padding:"9px",fontFamily:font,fontSize:13,fontWeight:600,cursor:editSaving?"wait":"pointer"}}>{editSaving?"Saving…":"Save"}</button>
@@ -1582,7 +1598,16 @@ export default function App() {
 
   };
 
-  const handleAddCatalog=async ({name,url,file,coverUrl})=>{
+  const uploadCoverImage=async (coverFile)=>{
+    if(!coverFile||!isCloud) return null;
+    const path=`catalog_cover_${Date.now()}_${coverFile.name.replace(/\s/g,"_")}`;
+    const {error}=await supabase.storage.from("crm-files").upload(path,coverFile,{upsert:true,contentType:coverFile.type});
+    if(error){toast("Cover upload failed: "+error.message);return null;}
+    const {data:sd}=supabase.storage.from("crm-files").getPublicUrl(path);
+    return sd?.publicUrl||null;
+  };
+
+  const handleAddCatalog=async ({name,url,file,coverFile})=>{
     let finalUrl=url||"";
     if(file&&isCloud){
       const path=`catalog_${Date.now()}_${file.name.replace(/\s/g,"_")}`;
@@ -1596,6 +1621,7 @@ export default function App() {
       }
     }
     if(!finalUrl){toast("Please provide a URL or upload a file.");return;}
+    const coverUrl=await uploadCoverImage(coverFile);
     const row={name:name||"Catalog",url:normalizePdfUrl(finalUrl),created_at:new Date().toISOString()};
     if(coverUrl) row.cover_url=coverUrl;
     if(isCloud){
@@ -1626,22 +1652,24 @@ export default function App() {
     toast("Catalog deleted.");
   };
 
-  const handleUpdateCatalog=async ({id,name,coverUrl})=>{
-    const updates={name,cover_url:coverUrl||null};
+  const handleUpdateCatalog=async ({id,name,coverFile})=>{
+    const coverUrl=await uploadCoverImage(coverFile);
+    const existing=catalogs.find(c=>c.id===id);
+    const finalCoverUrl=coverUrl||(existing?.cover_url||null);
+    const updates={name,cover_url:finalCoverUrl};
     if(isCloud){
       const {error}=await supabase.from("crm_catalogs").update(updates).eq("id",id);
       if(error){
-        // If cover_url column missing, retry with only name
         if(error.message&&error.message.includes("cover_url")){
           await supabase.from("crm_catalogs").update({name}).eq("id",id);
           setCatalogs(prev=>prev.map(c=>c.id===id?{...c,name}:c));
-          toast("Saved (add cover_url column in Supabase to store cover images).");
+          toast("Name saved. Run: ALTER TABLE crm_catalogs ADD COLUMN cover_url text;");
           return;
         }
         toast("Failed to save.");return;
       }
     }
-    setCatalogs(prev=>prev.map(c=>c.id===id?{...c,name,cover_url:coverUrl||null}:c));
+    setCatalogs(prev=>prev.map(c=>c.id===id?{...c,name,cover_url:finalCoverUrl}:c));
     toast("Catalog updated.");
   };
 
