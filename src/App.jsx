@@ -1278,16 +1278,17 @@ function AdminCatalogSection({catalogs,onAdd,onDelete,onEdit,onView}){
   // inline edit state
   const [editingId,setEditingId]=useState(null);
   const [editName,setEditName]=useState("");
+  const [editUrl,setEditUrl]=useState("");
   const [editCoverFile,setEditCoverFile]=useState(null);
   const [editCoverPreview,setEditCoverPreview]=useState(null);
   const [editSaving,setEditSaving]=useState(false);
   const editCoverRef=useRef();
 
-  const startEdit=(c)=>{setEditingId(c.id);setEditName(c.name);setEditCoverFile(null);setEditCoverPreview(c.cover_url||null);};
+  const startEdit=(c)=>{setEditingId(c.id);setEditName(c.name);setEditUrl(c.url||"");setEditCoverFile(null);setEditCoverPreview(c.cover_url||null);};
   const cancelEdit=()=>{setEditingId(null);setEditCoverFile(null);setEditCoverPreview(null);};
   const saveEdit=async(id)=>{
     setEditSaving(true);
-    await onEdit({id,name:editName.trim(),coverFile:editCoverFile});
+    await onEdit({id,name:editName.trim(),url:editUrl.trim(),coverFile:editCoverFile});
     setEditingId(null);setEditCoverFile(null);setEditCoverPreview(null);
     setEditSaving(false);
   };
@@ -1362,6 +1363,10 @@ function AdminCatalogSection({catalogs,onAdd,onDelete,onEdit,onView}){
                 <div>
                   <div style={{fontSize:11,fontWeight:600,color:C.sub,marginBottom:5,textTransform:"uppercase",letterSpacing:.4}}>Name</div>
                   <input value={editName} onChange={e=>setEditName(e.target.value)} style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:9,padding:"9px 12px",fontFamily:font,fontSize:14,outline:"none"}}/>
+                </div>
+                <div>
+                  <div style={{fontSize:11,fontWeight:600,color:C.sub,marginBottom:5,textTransform:"uppercase",letterSpacing:.4}}>Dropbox / External URL</div>
+                  <input value={editUrl} onChange={e=>setEditUrl(e.target.value)} placeholder="https://www.dropbox.com/s/…" style={{width:"100%",boxSizing:"border-box",background:C.bg2,border:`1px solid ${C.border}`,color:C.text,borderRadius:9,padding:"9px 12px",fontFamily:font,fontSize:14,outline:"none"}}/>
                 </div>
                 <div>
                   <div style={{fontSize:11,fontWeight:600,color:C.sub,marginBottom:5,textTransform:"uppercase",letterSpacing:.4}}>Cover Image</div>
@@ -1652,24 +1657,25 @@ export default function App() {
     toast("Catalog deleted.");
   };
 
-  const handleUpdateCatalog=async ({id,name,coverFile})=>{
+  const handleUpdateCatalog=async ({id,name,url,coverFile})=>{
     const coverUrl=await uploadCoverImage(coverFile);
     const existing=catalogs.find(c=>c.id===id);
     const finalCoverUrl=coverUrl||(existing?.cover_url||null);
-    const updates={name,cover_url:finalCoverUrl};
+    const finalUrl=url?normalizePdfUrl(url):(existing?.url||"");
+    const updates={name,url:finalUrl,cover_url:finalCoverUrl};
     if(isCloud){
       const {error}=await supabase.from("crm_catalogs").update(updates).eq("id",id);
       if(error){
         if(error.message&&error.message.includes("cover_url")){
-          await supabase.from("crm_catalogs").update({name}).eq("id",id);
-          setCatalogs(prev=>prev.map(c=>c.id===id?{...c,name}:c));
-          toast("Name saved. Run: ALTER TABLE crm_catalogs ADD COLUMN cover_url text;");
+          await supabase.from("crm_catalogs").update({name,url:finalUrl}).eq("id",id);
+          setCatalogs(prev=>prev.map(c=>c.id===id?{...c,name,url:finalUrl}:c));
+          toast("Saved. Run: ALTER TABLE crm_catalogs ADD COLUMN cover_url text;");
           return;
         }
         toast("Failed to save.");return;
       }
     }
-    setCatalogs(prev=>prev.map(c=>c.id===id?{...c,name,cover_url:finalCoverUrl}:c));
+    setCatalogs(prev=>prev.map(c=>c.id===id?{...c,name,url:finalUrl,cover_url:finalCoverUrl}:c));
     toast("Catalog updated.");
   };
 
